@@ -4,6 +4,7 @@ package platform
 
 /*
 #cgo LDFLAGS: -framework Cocoa -framework ApplicationServices -framework IOKit -framework CoreGraphics
+#cgo LDFLAGS: -Wl,-sectcreate,__TEXT,__info_plist,${SRCDIR}/Info.plist
 #include <stdlib.h>
 #include "darwin.h"
 */

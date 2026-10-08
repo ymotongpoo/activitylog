@@ -3,6 +3,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -13,15 +14,24 @@ import (
 // Label is the launchd label and the base name of the systemd unit.
 const Label = "net.ymotongpoo.activitylog.agent"
 
-// executable returns the resolved path of the running binary, so that a
-// symlink such as /opt/homebrew/bin/activitylog-agent points the service at
-// the binary inside the app bundle.
+// ErrHomebrew is returned by Install for a binary installed by Homebrew,
+// whose service is managed by `brew services`.
+var ErrHomebrew = errors.New("installed with Homebrew: run `brew services start activitylog-agent` instead")
+
+// executable returns the resolved path of the running binary. It refuses
+// Homebrew installs so that the agent is not registered twice.
 func executable() (string, error) {
 	exe, err := os.Executable()
 	if err != nil {
 		return "", err
 	}
-	return filepath.EvalSymlinks(exe)
+	if exe, err = filepath.EvalSymlinks(exe); err != nil {
+		return "", err
+	}
+	if strings.Contains(exe, "/Cellar/") {
+		return "", ErrHomebrew
+	}
+	return exe, nil
 }
 
 func writeFile(path, content string) error {

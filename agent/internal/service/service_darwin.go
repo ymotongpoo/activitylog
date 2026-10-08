@@ -58,9 +58,6 @@ func Install() error {
 	if err != nil {
 		return err
 	}
-	if !strings.Contains(exe, ".app/Contents/MacOS/") {
-		fmt.Fprintf(os.Stderr, "warning: %s is not inside an app bundle; macOS permissions will be attributed to it directly\n", exe)
-	}
 	if err := os.MkdirAll(filepath.Dir(LogPath()), 0o755); err != nil {
 		return err
 	}

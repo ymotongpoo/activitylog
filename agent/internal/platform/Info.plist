@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!--
+  Embedded into the activitylog-agent Mach-O binary (__TEXT,__info_plist) by
+  the cgo LDFLAGS in platform_darwin.go. macOS reads the usage description
+  from it before asking for Automation permission.
+-->
+<dict>
+	<key>CFBundleIdentifier</key>
+	<string>net.ymotongpoo.activitylog.agent</string>
+	<key>CFBundleName</key>
+	<string>activitylog-agent</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>activitylog-agent reads the URL and title of the active browser tab.</string>
+</dict>
+</plist>

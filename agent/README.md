@@ -10,7 +10,7 @@ macOS と Linux（GNOME）で動く常駐エージェントです。
 |---|---|
 | `activitylog-agent run [-config path] [-v]` | エージェントを動かす（引数を省略したときもこれ） |
 | `activitylog-agent doctor [-send-test] [-prompt]` | 設定、権限、現在のサンプル、起動状態、退避中のリクエスト数を表示する |
-| `activitylog-agent service install\|uninstall\|restart\|status` | LaunchAgent（macOS）または systemd のユーザーユニット（Linux）を管理する |
+| `activitylog-agent service install\|uninstall\|restart\|status` | LaunchAgent（macOS）または systemd のユーザーユニット（Linux）を管理する。Homebrew で入れた場合は `brew services` を使う |
 | `activitylog-agent emit terminal --event start\|end\|cwd ...` | シェルフックから呼ぶ。動いているエージェントにイベントを渡す |
 | `activitylog-agent example-config` | 設定ファイルの例を出力する |
 | `activitylog-agent version` | バージョンを表示する |
@@ -18,8 +18,7 @@ macOS と Linux（GNOME）で動く常駐エージェントです。
 `doctor -send-test` はテスト用のログを 1 件送り、エンドポイントとトークンが正しいかを確かめます。
 `doctor -prompt` は、未許可の権限について OS の許可ダイアログを出させます。
 `service install` は設定を検査し、問題があれば登録しません（`-force` で無視できます）。
-登録するサービスは、シンボリックリンクを解決した実体のパスを起動します。
-Homebrew の `activitylog-agent` から実行しても、LaunchAgent は .app の中のバイナリを指すので、macOS の許可は .app に対して求められます。
+Homebrew で入れたバイナリでは `service install` は何もせず、`brew services start activitylog-agent` を案内します（二重に登録しないため）。
 
 ## 設定
 
@@ -38,8 +37,9 @@ Grafana Cloud 以外の OTLP 受信側（OpenTelemetry Collector など）に送
 | macOS | オートメーション（ブラウザごと） | 拡張がないときのタブの URL | ウィンドウタイトルだけを記録する |
 | Linux | GNOME Shell 拡張 `activitylog@ymotongpoo.net` | 前面ウィンドウ | アプリを記録できない |
 
-macOS の許可は `ActivityLogAgent.app` に対して与えます。
-ターミナルから `build/activitylog-agent` を直接動かすと、許可はターミナルアプリに対して求められます。
+macOS の許可は `activitylog-agent` バイナリに対して与えます。
+バイナリには Info.plist（バンドル ID `net.ymotongpoo.activitylog.agent` とオートメーションの利用目的）を埋め込んであり、`make` は署名し直してそれを署名に結び付けます。
+launchd から起動したときは許可がバイナリに対して求められますが、ターミナルから直接動かすとターミナルアプリに対して求められます。
 
 ## データの保存場所
 
@@ -48,7 +48,7 @@ macOS では `~/Library/Application Support/activitylog/`、Linux では `~/.loc
 - `spool/` には、送信に失敗したトレースとログのリクエストを退避します。30 秒ごとに古い順に再送し、合計が `spool.max_mib`（デフォルト 256 MiB）を超えたら古いものから捨てます。
 - `checkpoint.json` には、開いている区間を 30 秒ごとに書き出します。クラッシュや強制終了の後に起動すると、書き出した時刻で区間を閉じて送ります（属性 `activity.recovered=true`）。
 
-ログは macOS では `~/Library/Logs/activitylog-agent.log`、Linux では `journalctl --user -u activitylog-agent` で読めます。
+ログは macOS では `brew services` なら `$(brew --prefix)/var/log/activitylog-agent.log`、`service install` なら `~/Library/Logs/activitylog-agent.log`、Linux では `journalctl --user -u activitylog-agent` で読めます。
 Warn 以上のログは `agent.diagnostic` イベントとして Loki にも送ります。
 
 ## 実装上の注意
@@ -69,12 +69,12 @@ Prometheus の `increase()` は新しい系列の最初のサンプルを数え�
 make test     # go test ./...
 make vet      # macOS と Linux の両方で go vet
 make build    # build/activitylog-agent
-make app      # build/ActivityLogAgent.app（macOS）
-make release-macos VERSION=x.y.z   # ユニバーサルバイナリの .app を zip にする
+make install  # ~/.local/bin に置いて service install する
+make release-macos VERSION=x.y.z   # darwin-universal の tar.gz
 make release-linux VERSION=x.y.z   # linux-amd64 と linux-arm64 の tar.gz
 ```
 
 `v*` のタグを push すると、GitHub Actions がリリースを作ります。
-リポジトリのシークレット `HOMEBREW_TAP_TOKEN`（`ymotongpoo/homebrew-macos` への contents と pull requests の書き込み権限を持つ fine-grained token）があれば、Cask を更新するプルリクエストも作ります。
+リポジトリのシークレット `HOMEBREW_TAP_TOKEN`（`ymotongpoo/homebrew-macos` への contents と pull requests の書き込み権限を持つ fine-grained token）があれば、Formula を更新するプルリクエストも作ります。
 
 Linux 版は cgo を使わないので、macOS から `GOOS=linux go build ./cmd/activitylog-agent` でクロスビルドできます。

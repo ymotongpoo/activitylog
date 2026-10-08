@@ -78,7 +78,7 @@ jobs:
           gh release create "$GITHUB_REF_NAME" \
             --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes ./*
 
-  # Opens a pull request that bumps the cask in ymotongpoo/homebrew-macos.
+  # Opens a pull request that bumps the formula in ymotongpoo/homebrew-macos.
   # Requires a HOMEBREW_TAP_TOKEN secret: a fine-grained token with contents
   # and pull request write access to that repository. Skipped without it.
   homebrew:
@@ -92,14 +92,14 @@ jobs:
         with:
           name: macos
           path: dist
-      - name: Update the cask
+      - name: Update the formula
         if: env.TAP_TOKEN != ''
         env:
           GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |
           set -eu
           version="${GITHUB_REF_NAME#v}"
-          sha="$(sha256sum "dist/ActivityLogAgent-$version-macos-universal.zip" | cut -d' ' -f1)"
+          sha="$(sha256sum "dist/activitylog-agent-$version-darwin-universal.tar.gz" | cut -d' ' -f1)"
           gh auth setup-git
           gh repo clone ymotongpoo/homebrew-macos tap -- --depth 1
           cd tap
@@ -108,10 +108,10 @@ jobs:
           branch="activitylog-agent-$version"
           git switch -c "$branch"
           sed -i -E \
-            -e "s/^  version \".*\"/  version \"$version\"/" \
+            -e "/^  url /s/[0-9]+\.[0-9]+\.[0-9]+/$version/g" \
             -e "s/^  sha256 \".*\"/  sha256 \"$sha\"/" \
-            Casks/activitylog-agent.rb
-          git commit -am "feat(casks): update activitylog-agent to $version"
+            Formula/activitylog-agent.rb
+          git commit -am "activitylog-agent $version"
           git push origin "$branch"
           gh pr create --repo ymotongpoo/homebrew-macos --head "$branch" \
             --title "activitylog-agent $version" \

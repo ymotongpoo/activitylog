@@ -52,41 +52,33 @@ Android アプリはエージェントを介さず、端末から直接 Grafana 
 
 ## macOS
 
-Homebrew の Cask で入れられます。
+Homebrew で入れて、`brew services` で常駐させます。
 
 ```sh
-brew tap ymotongpoo/macos
-brew install --cask activitylog-agent
+brew install ymotongpoo/macos/activitylog-agent
 
 mkdir -p ~/Library/Application\ Support/activitylog
 activitylog-agent example-config > ~/Library/Application\ Support/activitylog/config.yaml
 # config.yaml の otlp.endpoint と otlp.instance_id を編集し、トークンを token_file のパスに保存する
-activitylog-agent service install
+activitylog-agent doctor          # 設定と権限を確かめる
+brew services start activitylog-agent
 ```
 
-Cask は `ActivityLogAgent.app` を `/Applications` に置き、`activitylog-agent` コマンドをパスに通します。
-`activitylog-agent service install` は設定を検査してから LaunchAgent を登録し、エージェントを起動します。
-`brew uninstall --cask activitylog-agent` で LaunchAgent も取り除かれます。
+エージェントは GUI を持たない常駐プロセスで、launchd がログイン時に起動します。
+ログは `$(brew --prefix)/var/log/activitylog-agent.log` に出ます。
 
-初回起動時にアクセシビリティの許可を求められるので、システム設定のプライバシーとセキュリティで許可してください。
+初回起動時にアクセシビリティの許可を求められるので、システム設定のプライバシーとセキュリティで `activitylog-agent` を許可してください。
 ウィンドウタイトルの取得に必要です。
 
 ブラウザ拡張を入れていない場合は、AppleScript でタブの URL を取得します。
 このとき、ブラウザごとにオートメーションの許可ダイアログが出ます。
 拡張を入れたほうが取得の遅れがなく、音声再生中かどうかも分かります。
 
-配布している .app は Apple の公証を受けていないアドホック署名です。
-Cask はインストール時に quarantine 属性を外すので Gatekeeper の警告は出ませんが、macOS はバージョンごとに別のアプリとみなします。
-そのため `brew upgrade` の後は、アクセシビリティとオートメーションの許可を付け直してください（古い項目はシステム設定から削除して構いません）。
+配布しているバイナリは Apple の公証を受けていないアドホック署名です。
+macOS はアドホック署名のバイナリをハッシュで識別するので、`brew upgrade` の後はアクセシビリティとオートメーションの許可を付け直し、`brew services restart activitylog-agent` で再起動してください（古い項目はシステム設定から削除して構いません）。
 
-ソースから入れる場合は次のとおりです。
-
-```sh
-cd agent
-make install-macos   # ~/Applications/ActivityLogAgent.app を作り、service install まで行う
-```
-
-キーチェーンにコード署名用の証明書を作り、`make install-macos SIGN_IDENTITY="証明書名"` とすると、許可が再ビルド後も残ります。
+ソースから入れる場合は、`make -C agent install` で `~/.local/bin` に置いて LaunchAgent を登録します。
+キーチェーンにコード署名用の証明書を作り、`make -C agent install SIGN_IDENTITY="証明書名"` とすると、許可が再ビルド後も残ります。
 
 ## Linux（GNOME）
 
@@ -104,7 +96,7 @@ activitylog-agent example-config > ~/.config/activitylog/config.yaml
 activitylog-agent service install   # systemd のユーザーユニットを登録して起動する
 ```
 
-ソースから入れる場合は `extensions/gnome-shell/install.sh` と `make -C agent install-linux` を使います。
+ソースから入れる場合は `extensions/gnome-shell/install.sh` と `make -C agent install` を使います。
 
 GNOME の Wayland セッションでは、外部プロセスから前面ウィンドウを取得できません。
 そのため Shell 拡張が前面ウィンドウを D-Bus で公開し、エージェントがそれを 1 秒ごとに読みます。
