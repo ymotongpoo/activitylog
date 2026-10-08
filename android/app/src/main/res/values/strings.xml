@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">activitylog</string>
+    <string name="accessibility_service_label">activitylog browser URL capture</string>
+    <string name="accessibility_service_description">Reads the address bar of Chrome-based browsers (Chrome, Brave, Edge, Vivaldi, Chromium) so that activitylog can record which sites you visit. The data is sent only to the Grafana Cloud stack configured in the app.</string>
+
+    <string name="section_export">Grafana Cloud (OTLP)</string>
+    <string name="label_endpoint">OTLP endpoint</string>
+    <string name="hint_endpoint">https://otlp-gateway-prod-ap-northeast-0.grafana.net/otlp</string>
+    <string name="label_instance_id">Instance ID</string>
+    <string name="label_token">Access policy token</string>
+    <string name="hint_token_empty">glc_…</string>
+    <string name="hint_token_saved">(saved; leave empty to keep)</string>
+    <string name="label_device_name">Device name override</string>
+
+    <string name="section_privacy">Privacy</string>
+    <string name="label_excluded_packages">Excluded apps (package or label glob, one per line)</string>
+    <string name="hint_excluded_packages">com.example.bank\ncom.example.*</string>
+    <string name="label_excluded_domains">Excluded domains (glob, one per line)</string>
+    <string name="hint_excluded_domains">*.example-bank.co.jp</string>
+    <string name="label_url_mode">URL in url.full</string>
+    <string name="url_mode_full">full</string>
+    <string name="url_mode_path">path</string>
+    <string name="url_mode_domain">domain</string>
+    <string name="url_mode_none">none</string>
+    <string name="button_save">Save</string>
+    <string name="button_clear_token">Clear token</string>
+
+    <string name="section_permissions">Permissions</string>
+    <string name="button_usage_access">Open Usage Access settings</string>
+    <string name="button_accessibility">Open Accessibility settings</string>
+    <string name="button_app_info">Open app info (battery, restricted settings)</string>
+    <string name="permission_status">Usage Access: %1$s\nAccessibility (browser URLs): %2$s</string>
+    <string name="granted">granted</string>
+    <string name="not_granted">NOT granted</string>
+
+    <string name="section_status">Status</string>
+    <string name="button_send_now">Send now</string>
+    <string name="saved">Saved</string>
+    <string name="send_requested">Collection and send scheduled</string>
+    <string name="never">never</string>
+    <string name="status_text">Device name: %1$s\nLast run: %2$s\n%3$s\nLast send: %4$s\n%5$s\nQueued payloads: %6$d (%7$d KiB)</string>
+    <string name="diagnostics_header">Recent diagnostics:</string>
+</resources>

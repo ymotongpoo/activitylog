@@ -1,0 +1,118 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: agent/go.mod
+          cache-dependency-path: agent/go.sum
+      - run: make -C agent test
+      - run: make -C agent release-macos VERSION="${GITHUB_REF_NAME#v}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: macos
+          path: agent/build/dist/*
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: agent/go.mod
+          cache-dependency-path: agent/go.sum
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: extensions/vscode/package-lock.json
+      - run: make -C agent test
+      - run: make -C agent release-linux VERSION="${GITHUB_REF_NAME#v}"
+      - name: Package extensions
+        run: |
+          set -eu
+          version="${GITHUB_REF_NAME#v}"
+          dist="$PWD/agent/build/dist"
+          (cd extensions/chrome && zip -qr "$dist/activitylog-chrome-extension-$version.zip" . -x README.md)
+          (cd "extensions/gnome-shell/activitylog@ymotongpoo.net" &&
+            zip -qr "$dist/activitylog@ymotongpoo.net.shell-extension.zip" .)
+          cp LICENSE extensions/vscode/LICENSE
+          (cd extensions/vscode && npm ci && npm run compile &&
+            npx --yes @vscode/vsce package --no-dependencies -o "$dist/activitylog-vscode-$version.vsix")
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux
+          path: agent/build/dist/*
+
+  release:
+    needs: [macos, linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          cd dist
+          sha256sum -- * > SHA256SUMS
+          gh release create "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes ./*
+
+  # Opens a pull request that bumps the cask in ymotongpoo/homebrew-macos.
+  # Requires a HOMEBREW_TAP_TOKEN secret: a fine-grained token with contents
+  # and pull request write access to that repository. Skipped without it.
+  homebrew:
+    needs: release
+    runs-on: ubuntu-latest
+    env:
+      TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+    steps:
+      - uses: actions/download-artifact@v8
+        if: env.TAP_TOKEN != ''
+        with:
+          name: macos
+          path: dist
+      - name: Update the cask
+        if: env.TAP_TOKEN != ''
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          set -eu
+          version="${GITHUB_REF_NAME#v}"
+          sha="$(sha256sum "dist/ActivityLogAgent-$version-macos-universal.zip" | cut -d' ' -f1)"
+          gh auth setup-git
+          gh repo clone ymotongpoo/homebrew-macos tap -- --depth 1
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          branch="activitylog-agent-$version"
+          git switch -c "$branch"
+          sed -i -E \
+            -e "s/^  version \".*\"/  version \"$version\"/" \
+            -e "s/^  sha256 \".*\"/  sha256 \"$sha\"/" \
+            Casks/activitylog-agent.rb
+          git commit -am "feat(casks): update activitylog-agent to $version"
+          git push origin "$branch"
+          gh pr create --repo ymotongpoo/homebrew-macos --head "$branch" \
+            --title "activitylog-agent $version" \
+            --body "Automated update from ymotongpoo/activitylog $GITHUB_REF_NAME."

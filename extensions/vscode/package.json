@@ -1,0 +1,66 @@
+{
+  "name": "activitylog",
+  "displayName": "activitylog",
+  "description": "Reports the active file, project and Git branch to the local activitylog agent.",
+  "version": "0.1.0",
+  "publisher": "ymotongpoo",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ymotongpoo/activitylog.git"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "extensionKind": [
+    "ui",
+    "workspace"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    },
+    "virtualWorkspaces": true
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "activitylog.checkConnection",
+        "title": "activitylog: Check Agent Connection"
+      }
+    ],
+    "configuration": {
+      "title": "activitylog",
+      "properties": {
+        "activitylog.agentUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:5610",
+          "description": "Base URL of the local activitylog agent ingest API."
+        },
+        "activitylog.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Send editor activity to the local activitylog agent."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "npx @vscode/vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.0",
+    "@types/vscode": "~1.90.0",
+    "typescript": "^5.9.3"
+  }
+}

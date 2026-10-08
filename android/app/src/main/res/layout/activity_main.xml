@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/scroll"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            style="@style/ScreenTitle"
+            android:text="@string/app_name" />
+
+        <TextView
+            style="@style/SectionTitle"
+            android:text="@string/section_export" />
+
+        <TextView
+            style="@style/FieldLabel"
+            android:text="@string/label_endpoint" />
+
+        <EditText
+            android:id="@+id/endpoint"
+            style="@style/Field"
+            android:autofillHints=""
+            android:hint="@string/hint_endpoint"
+            android:inputType="textUri" />
+
+        <TextView
+            style="@style/FieldLabel"
+            android:labelFor="@+id/instance_id"
+            android:text="@string/label_instance_id" />
+
+        <EditText
+            android:id="@+id/instance_id"
+            style="@style/Field"
+            android:autofillHints=""
+            android:inputType="number" />
+
+        <TextView
+            style="@style/FieldLabel"
+            android:labelFor="@+id/token"
+            android:text="@string/label_token" />
+
+        <EditText
+            android:id="@+id/token"
+            style="@style/Field"
+            android:autofillHints=""
+            android:inputType="textPassword" />
+
+        <TextView
+            style="@style/FieldLabel"
+            android:labelFor="@+id/device_name"
+            android:text="@string/label_device_name" />
+
+        <EditText
+            android:id="@+id/device_name"
+            style="@style/Field"
+            android:autofillHints=""
+            android:inputType="text" />
+
+        <TextView
+            style="@style/SectionTitle"
+            android:text="@string/section_privacy" />
+
+        <TextView
+            style="@style/FieldLabel"
+            android:text="@string/label_excluded_packages" />
+
+        <EditText
+            android:id="@+id/excluded_packages"
+            style="@style/Field"
+            android:autofillHints=""
+            android:gravity="top"
+            android:hint="@string/hint_excluded_packages"
+            android:inputType="textMultiLine"
+            android:minLines="2" />
+
+        <TextView
+            style="@style/FieldLabel"
+            android:text="@string/label_excluded_domains" />
+
+        <EditText
+            android:id="@+id/excluded_domains"
+            style="@style/Field"
+            android:autofillHints=""
+            android:gravity="top"
+            android:hint="@string/hint_excluded_domains"
+            android:inputType="textMultiLine"
+            android:minLines="2" />
+
+        <TextView
+            style="@style/FieldLabel"
+            android:text="@string/label_url_mode" />
+
+        <RadioGroup
+            android:id="@+id/url_mode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/url_mode_full"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/url_mode_full" />
+
+            <RadioButton
+                android:id="@+id/url_mode_path"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/url_mode_path" />
+
+            <RadioButton
+                android:id="@+id/url_mode_domain"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/url_mode_domain" />
+
+            <RadioButton
+                android:id="@+id/url_mode_none"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/url_mode_none" />
+        </RadioGroup>
+
+        <LinearLayout
+            style="?android:attr/buttonBarStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/save"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/button_save" />
+
+            <Button
+                android:id="@+id/clear_token"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/button_clear_token" />
+        </LinearLayout>
+
+        <TextView
+            style="@style/SectionTitle"
+            android:text="@string/section_permissions" />
+
+        <TextView
+            android:id="@+id/permission_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textIsSelectable="true" />
+
+        <Button
+            android:id="@+id/open_usage_access"
+            style="@style/WideButton"
+            android:text="@string/button_usage_access" />
+
+        <Button
+            android:id="@+id/open_accessibility"
+            style="@style/WideButton"
+            android:text="@string/button_accessibility" />
+
+        <Button
+            android:id="@+id/open_app_info"
+            style="@style/WideButton"
+            android:text="@string/button_app_info" />
+
+        <TextView
+            style="@style/SectionTitle"
+            android:text="@string/section_status" />
+
+        <Button
+            android:id="@+id/send_now"
+            style="@style/WideButton"
+            android:text="@string/button_send_now" />
+
+        <TextView
+            android:id="@+id/status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textIsSelectable="true" />
+
+        <TextView
+            android:id="@+id/diagnostics"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textIsSelectable="true"
+            android:textSize="12sp"
+            android:typeface="monospace" />
+    </LinearLayout>
+</ScrollView>

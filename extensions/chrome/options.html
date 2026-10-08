@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <title>activitylog 設定</title>
+    <style>
+      body { font: 14px system-ui, sans-serif; margin: 16px; min-width: 420px; }
+      label { display: block; margin: 12px 0 4px; font-weight: 600; }
+      input, select { width: 100%; box-sizing: border-box; padding: 4px 6px; font: inherit; }
+      .row { display: flex; gap: 8px; margin-top: 16px; }
+      .hint { color: #666; font-size: 12px; margin-top: 4px; }
+      #status { margin-top: 12px; min-height: 1.4em; white-space: pre-wrap; }
+      #status.ok { color: #1a7f37; }
+      #status.err { color: #cf222e; }
+    </style>
+  </head>
+  <body>
+    <label for="agentUrl">エージェントの URL</label>
+    <input id="agentUrl" type="text" placeholder="http://127.0.0.1:5610" spellcheck="false" />
+    <div class="hint">ポート番号だけ（例: 5610）でも可。127.0.0.1 / localhost のみ。</div>
+
+    <label for="browserOverride">ブラウザ名</label>
+    <select id="browserOverride">
+      <option value="">自動検出</option>
+      <option value="chrome">chrome</option>
+      <option value="edge">edge</option>
+      <option value="brave">brave</option>
+      <option value="arc">arc</option>
+      <option value="vivaldi">vivaldi</option>
+      <option value="chromium">chromium</option>
+      <option value="opera">opera</option>
+      <option value="other">other</option>
+    </select>
+    <div class="hint">Arc などは自動検出できないため、必要ならここで指定する。検出結果: <span id="detected">-</span></div>
+
+    <div class="row">
+      <button id="save" type="button">保存</button>
+      <button id="test" type="button">接続テスト</button>
+    </div>
+    <div id="status"></div>
+
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

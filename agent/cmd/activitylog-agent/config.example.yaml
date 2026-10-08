@@ -1,0 +1,81 @@
+# activitylog-agent configuration.
+#
+# Default location:
+#   macOS: ~/Library/Application Support/activitylog/config.yaml
+#   Linux: ~/.config/activitylog/config.yaml
+
+# Shown as the "instance" label in Grafana. Defaults to the host name.
+# device_name: my-macbook
+
+otlp:
+  # Grafana Cloud: My Account > your stack > OpenTelemetry > Configure.
+  endpoint: https://otlp-gateway-prod-ap-northeast-0.grafana.net/otlp
+  instance_id: "123456"
+  # Cloud Access Policy token with traces:write, metrics:write and logs:write.
+  # Prefer token_file or the ACTIVITYLOG_OTLP_TOKEN environment variable.
+  # token: glc_...
+  token_file: ~/.config/activitylog/token
+  # Extra headers, e.g. for a self-hosted collector.
+  # headers:
+  #   X-Scope-OrgID: tenant1
+
+# poll_interval: 1s
+# Long sessions are split into traces of at most this length.
+# max_session_span: 1h
+
+afk:
+  timeout: 3m
+  # Treat time as active while video players or meeting apps prevent idle
+  # display sleep. Apps like Amphetamine keep the assertion permanently.
+  respect_idle_inhibitors: false
+
+ingest:
+  # Browser/editor extensions and shell hooks send to this address.
+  listen: 127.0.0.1:5610
+
+# Additional application IDs to treat as browsers, editors or terminals.
+# macOS: bundle ID (osascript -e 'id of app "Ghostty"'); Linux: desktop ID.
+# apps:
+#   browsers: [com.example.browser]
+#   editors: [dev.zed.Zed]
+#   terminals: [com.example.term]
+
+privacy:
+  # Every matching rule applies. Match keys: app (glob on name or ID),
+  # title (regexp), domain (glob), url (regexp), project (glob), file (regexp).
+  rules:
+    - match: { app: "1Password*" }
+      drop: true
+    - match: { app: "com.apple.keychainaccess" }
+      drop: true
+    - match: { title: "(?i)password|パスワード" }
+      mask_title: true
+    # full | path (drop query and fragment) | domain | none
+    - match: {}
+      url: path
+  # Shell commands: full | name (first word only) | none
+  terminal_command: name
+
+# The first matching rule wins. Activities no rule matches are
+# "Uncategorized".
+categories:
+  - name: Work/Programming
+    match: { app: "*code*" }
+  - name: Work/Programming
+    match: { domain: "github.com" }
+  - name: Work/Programming
+    match: { app: "*terminal*" }
+  - name: Communication
+    match: { app: "Slack" }
+  - name: Communication
+    match: { domain: "mail.google.com" }
+  - name: Media
+    match: { domain: "*.youtube.com" }
+
+metrics:
+  # interval: 60s
+  # Per-domain time metric. Disable if the number of domains gets too large.
+  browser_domains: true
+
+# spool:
+#   max_mib: 256

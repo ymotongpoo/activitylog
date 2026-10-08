@@ -1,0 +1,17 @@
+[versions]
+agp = "8.13.2"
+kotlin = "2.2.21"
+androidxCore = "1.17.0"
+androidxWork = "2.11.0"
+junit = "4.13.2"
+orgJson = "20250517"
+
+[libraries]
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
+androidx-work-runtime = { module = "androidx.work:work-runtime", version.ref = "androidxWork" }
+junit = { module = "junit:junit", version.ref = "junit" }
+org-json = { module = "org.json:json", version.ref = "orgJson" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

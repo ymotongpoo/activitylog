@@ -1,0 +1,8 @@
+{
+  "uuid": "activitylog@ymotongpoo.net",
+  "name": "activitylog",
+  "description": "Exposes the focused window over D-Bus (net.ymotongpoo.ActivityLog1) so that activitylog-agent can track the foreground app on Wayland.",
+  "shell-version": ["45", "46", "47", "48", "49", "50"],
+  "url": "https://github.com/ymotongpoo/activitylog",
+  "version-name": "0.1.0"
+}
