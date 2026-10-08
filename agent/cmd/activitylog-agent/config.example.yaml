@@ -8,16 +8,22 @@
 # device_name: my-macbook
 
 otlp:
-  # Grafana Cloud: My Account > your stack > OpenTelemetry > Configure.
-  endpoint: https://otlp-gateway-prod-ap-northeast-0.grafana.net/otlp
-  instance_id: "123456"
-  # Cloud Access Policy token with traces:write, metrics:write and logs:write.
+  # OTLP/HTTP endpoint without the /v1/<signal> suffix. The default is the
+  # standard OTLP/HTTP receiver of a local Grafana Alloy or OpenTelemetry
+  # Collector, which forwards the data to its backends.
+  endpoint: http://localhost:4318
+
+  # To send to Grafana Cloud directly instead, use the OTLP gateway of your
+  # stack (My Account > your stack > OpenTelemetry > Configure) and a Cloud
+  # Access Policy token with traces:write, metrics:write and logs:write.
   # Prefer token_file or the ACTIVITYLOG_OTLP_TOKEN environment variable.
-  # token: glc_...
-  token_file: ~/.config/activitylog/token
-  # Extra headers, e.g. for a self-hosted collector.
+  # endpoint: https://otlp-gateway-prod-ap-northeast-0.grafana.net/otlp
+  # instance_id: "123456"
+  # token_file: ~/.config/activitylog/token
+
+  # Extra headers, e.g. for a collector that requires authentication.
   # headers:
-  #   X-Scope-OrgID: tenant1
+  #   Authorization: Bearer ...
 
 # poll_interval: 1s
 # Long sessions are split into traces of at most this length.

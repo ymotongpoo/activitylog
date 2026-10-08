@@ -84,8 +84,13 @@ type Config struct {
 	Path string `yaml:"-"`
 }
 
-// DefaultListen is the default address of the local ingest API.
-const DefaultListen = "127.0.0.1:5610"
+const (
+	// DefaultListen is the default address of the local ingest API.
+	DefaultListen = "127.0.0.1:5610"
+	// DefaultEndpoint is the default OTLP/HTTP receiver of a local Grafana
+	// Alloy or OpenTelemetry Collector.
+	DefaultEndpoint = "http://localhost:4318"
+)
 
 // DefaultPath returns the default configuration file path:
 // ~/Library/Application Support/activitylog/config.yaml on macOS and
@@ -160,6 +165,9 @@ func (c *Config) applyEnv() {
 }
 
 func (c *Config) applyDefaults() {
+	if c.OTLP.Endpoint == "" {
+		c.OTLP.Endpoint = DefaultEndpoint
+	}
 	if c.DeviceName == "" {
 		c.DeviceName, _ = os.Hostname()
 		c.DeviceName = strings.TrimSuffix(c.DeviceName, ".local")

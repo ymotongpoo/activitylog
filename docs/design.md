@@ -319,8 +319,8 @@ GNOME Wayland では外部プロセスから前面ウィンドウを取れない
 
 ## 送信とオフライン耐性
 
-- 送信先は Grafana Cloud の OTLP ゲートウェイ（例 `https://otlp-gateway-prod-ap-northeast-0.grafana.net/otlp`）。`/v1/traces`、`/v1/metrics`、`/v1/logs` を付けて送る。
-- 認証は `Authorization: Basic base64(<instance_id>:<token>)`。トークンはスコープ `traces:write`、`metrics:write`、`logs:write` を持つ Cloud Access Policy トークン。
+- デスクトップの送信先のデフォルトは、ローカルの Grafana Alloy や OpenTelemetry Collector の OTLP/HTTP レシーバー `http://localhost:4318`。`/v1/traces`、`/v1/metrics`、`/v1/logs` を付けて送る。Grafana Cloud への転送と認証はレシーバーが受け持つ。
+- Grafana Cloud の OTLP ゲートウェイ（例 `https://otlp-gateway-prod-ap-northeast-0.grafana.net/otlp`）に直接送ることもできる。認証は `Authorization: Basic base64(<instance_id>:<token>)`。トークンはスコープ `traces:write`、`metrics:write`、`logs:write` を持つ Cloud Access Policy トークン。Android はこの直接送信だけを使う。
 - デスクトップのトレースとログは protobuf を gzip して送る。送信に失敗（ネットワークエラー、429、5xx）したらリクエスト本体をディスクに退避し、30 秒ごとに古い順に再送する。退避領域の上限は既定 256 MiB で、超えたら古いものから捨てる。
 - メトリクスは cumulative なので、送信に失敗しても次の送信で回復する。退避はしない。
 - 開いている区間は 30 秒ごとにディスクにチェックポイントする。クラッシュや強制終了の後に起動したら、チェックポイント時刻で閉じて送る。

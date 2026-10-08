@@ -24,10 +24,12 @@ Homebrew で入れたバイナリでは `service install` は何もせず、`bre
 
 設定ファイルの場所は、macOS では `~/Library/Application Support/activitylog/config.yaml`、Linux では `~/.config/activitylog/config.yaml` です。
 項目の説明は [config.example.yaml](cmd/activitylog-agent/config.example.yaml) に書いてあります。
+設定ファイルがなければデフォルトで動き、ローカルの Alloy や OpenTelemetry Collector の OTLP/HTTP レシーバー（`http://localhost:4318`）に送ります。
 
 トークンは設定ファイルに直接書かず、`otlp.token_file` に置くか環境変数 `ACTIVITYLOG_OTLP_TOKEN` で渡せます。
 `otlp.instance_id` とトークンの両方があれば `Authorization: Basic` を、トークンだけなら `Authorization: Bearer` を付けます。
-Grafana Cloud 以外の OTLP 受信側（OpenTelemetry Collector など）に送るなら、`instance_id` を空にして `otlp.headers` で認証ヘッダーを指定してください。
+認証が必要なレシーバーに送るなら、`instance_id` を空にして `otlp.headers` で認証ヘッダーを指定してください。
+送信先は、環境変数 `ACTIVITYLOG_OTLP_ENDPOINT`、設定ファイルの `otlp.endpoint`、環境変数 `OTEL_EXPORTER_OTLP_ENDPOINT`、デフォルトの順で、最初に見つかったものを使います。
 
 ## 必要な権限
 

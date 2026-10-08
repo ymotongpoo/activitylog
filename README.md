@@ -1,6 +1,6 @@
 # activitylog
 
-[ActivityWatch](https://activitywatch.net/) と同種のアクティビティを macOS、Linux（GNOME）、Android で収集し、OTLP で Grafana Cloud に直接送るアプリ一式です。
+[ActivityWatch](https://activitywatch.net/) と同種のアクティビティを macOS、Linux（GNOME）、Android で収集し、OTLP で Grafana Cloud に送るアプリ一式です。
 GUI は持たず、可視化は Grafana で行います。
 
 収集するのは次のデータです。
@@ -40,15 +40,54 @@ GUI は持たず、可視化は Grafana で行います。
 | [`android/`](android/) | Android アプリ（Kotlin） | Android 10 以降 |
 | [`dashboards/`](dashboards/) | Grafana ダッシュボード | Grafana Cloud |
 
-デスクトップでは、拡張機能やフックがローカルのエージェント（`127.0.0.1:5610`）に生のデータを送り、エージェントがプライバシールールを適用してから Grafana Cloud に送ります。
+デスクトップでは、拡張機能やフックがローカルのエージェント（`127.0.0.1:5610`）に生のデータを送り、エージェントがプライバシールールを適用してから、ローカルの OTLP レシーバー（Alloy や OpenTelemetry Collector）経由で Grafana Cloud に送ります。
 Android アプリはエージェントを介さず、端末から直接 Grafana Cloud に送ります。
 
-## Grafana Cloud の準備
+## 送信先
 
-1. Grafana Cloud のポータルでスタックを開き、OpenTelemetry の Configure から OTLP エンドポイント（`https://otlp-gateway-<region>.grafana.net/otlp`）とインスタンス ID を控えます。
-2. Cloud Access Policy を作り、スコープ `traces:write`、`metrics:write`、`logs:write` を付けたトークンを発行します。
+エージェントは、デフォルトでは同じマシンで動く Grafana Alloy や OpenTelemetry Collector の OTLP/HTTP レシーバー（`http://localhost:4318`）に送ります。
+設定ファイルがなくても、このデフォルトで動きます。
+Grafana Cloud などへの転送と認証はレシーバー側に任せる構成です。
 
-デスクトップと Android で同じトークンを使えます。
+Alloy から Grafana Cloud に転送する設定の例です。
+OTLP エンドポイントとインスタンス ID は、Grafana Cloud のポータルでスタックの OpenTelemetry の Configure から確認できます。
+トークンは、スコープ `traces:write`、`metrics:write`、`logs:write` を付けた Cloud Access Policy で発行します。
+
+```alloy
+otelcol.receiver.otlp "default" {
+  http { }
+
+  output {
+    metrics = [otelcol.processor.batch.default.input]
+    logs    = [otelcol.processor.batch.default.input]
+    traces  = [otelcol.processor.batch.default.input]
+  }
+}
+
+otelcol.processor.batch "default" {
+  output {
+    metrics = [otelcol.exporter.otlphttp.grafana_cloud.input]
+    logs    = [otelcol.exporter.otlphttp.grafana_cloud.input]
+    traces  = [otelcol.exporter.otlphttp.grafana_cloud.input]
+  }
+}
+
+otelcol.auth.basic "grafana_cloud" {
+  username = sys.env("GRAFANA_CLOUD_INSTANCE_ID")
+  password = sys.env("GRAFANA_CLOUD_TOKEN")
+}
+
+otelcol.exporter.otlphttp "grafana_cloud" {
+  client {
+    endpoint = "https://otlp-gateway-prod-ap-northeast-0.grafana.net/otlp"
+    auth     = otelcol.auth.basic.grafana_cloud.handler
+  }
+}
+```
+
+レシーバーを置かずに Grafana Cloud へ直接送ることもできます。
+その場合は設定ファイルの `otlp.endpoint` に OTLP ゲートウェイを、`otlp.instance_id` と `otlp.token_file` にインスタンス ID とトークンを書きます（[config.example.yaml](agent/cmd/activitylog-agent/config.example.yaml) のコメントを参照）。
+Android アプリは端末にレシーバーがない前提なので、アプリの設定画面で Grafana Cloud の OTLP ゲートウェイとトークンを指定します。
 
 ## macOS
 
@@ -58,12 +97,15 @@ Intel Mac ではソースからビルドしてください。
 
 ```sh
 brew install ymotongpoo/macos/activitylog-agent
+activitylog-agent doctor          # 設定、権限、レシーバーへの疎通を確かめる
+brew services start activitylog-agent
+```
 
+デフォルトから変えたい設定があるときは、先に設定ファイルを作ります。
+
+```sh
 mkdir -p ~/Library/Application\ Support/activitylog
 activitylog-agent example-config > ~/Library/Application\ Support/activitylog/config.yaml
-# config.yaml の otlp.endpoint と otlp.instance_id を編集し、トークンを token_file のパスに保存する
-activitylog-agent doctor          # 設定と権限を確かめる
-brew services start activitylog-agent
 ```
 
 エージェントは GUI を持たない常駐プロセスで、launchd がログイン時に起動します。
@@ -92,12 +134,10 @@ gnome-extensions enable activitylog@ymotongpoo.net   # Wayland では先にロ�
 
 tar xzf activitylog-agent-<version>-linux-amd64.tar.gz
 install -Dm755 activitylog-agent-<version>-linux-amd64/activitylog-agent ~/.local/bin/activitylog-agent
-mkdir -p ~/.config/activitylog
-activitylog-agent example-config > ~/.config/activitylog/config.yaml
-# config.yaml を編集する
 activitylog-agent service install   # systemd のユーザーユニットを登録して起動する
 ```
 
+設定ファイルは `~/.config/activitylog/config.yaml` です（`activitylog-agent example-config` で例を出力できます）。
 ソースから入れる場合は `extensions/gnome-shell/install.sh` と `make -C agent install` を使います。
 
 GNOME の Wayland セッションでは、外部プロセスから前面ウィンドウを取得できません。
@@ -128,6 +168,7 @@ activitylog-agent doctor -send-test
 ```
 
 設定、権限、現在の前面アプリ、エージェントの起動状態、退避中のリクエスト数を表示し、テスト用のログを 1 件送ります。
+ローカルのレシーバーに送る構成では、レシーバーの先（Grafana Cloud など）まで届いたかを Grafana 側で確かめてください。
 Grafana の Explore で Loki に `{service_namespace="activitylog"} | event_name="agent.doctor"` と問い合わせると、届いたかどうか確認できます。
 
 ダッシュボードは [dashboards/activitylog.json](dashboards/activitylog.json) をインポートしてください。
