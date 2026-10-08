@@ -53,6 +53,8 @@ Android アプリはエージェントを介さず、端末から直接 Grafana 
 ## macOS
 
 Homebrew で入れて、`brew services` で常駐させます。
+配布バイナリは Apple シリコン（arm64）向けだけです。
+Intel Mac ではソースからビルドしてください。
 
 ```sh
 brew install ymotongpoo/macos/activitylog-agent

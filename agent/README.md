@@ -70,7 +70,7 @@ make test     # go test ./...
 make vet      # macOS と Linux の両方で go vet
 make build    # build/activitylog-agent
 make install  # ~/.local/bin に置いて service install する
-make release-macos VERSION=x.y.z   # darwin-universal の tar.gz
+make release-macos VERSION=x.y.z   # darwin-arm64（Apple シリコン）の tar.gz
 make release-linux VERSION=x.y.z   # linux-amd64 と linux-arm64 の tar.gz
 ```
 

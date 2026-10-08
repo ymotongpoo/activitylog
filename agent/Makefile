@@ -47,17 +47,15 @@ uninstall:
 	-$(PREFIX)/bin/activitylog-agent service uninstall
 	rm -f $(PREFIX)/bin/activitylog-agent
 
-# Universal (arm64 + x86_64) binary for the Homebrew formula.
+# Apple silicon (arm64) binary for the Homebrew formula.
 release-macos:
-	mkdir -p build/arm64 build/amd64 $(DIST)
-	CGO_ENABLED=1 GOARCH=arm64 CC="clang -arch arm64" go build $(GOFLAGS_BUILD) -o build/arm64/activitylog-agent ./cmd/activitylog-agent
-	CGO_ENABLED=1 GOARCH=amd64 CC="clang -arch x86_64" go build $(GOFLAGS_BUILD) -o build/amd64/activitylog-agent ./cmd/activitylog-agent
-	dir=build/activitylog-agent-$(VERSION)-darwin-universal; \
+	mkdir -p $(DIST)
+	dir=build/activitylog-agent-$(VERSION)-darwin-arm64; \
 	rm -rf $$dir && mkdir -p $$dir && \
-	lipo -create -output $$dir/activitylog-agent build/arm64/activitylog-agent build/amd64/activitylog-agent && \
+	CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build $(GOFLAGS_BUILD) -o $$dir/activitylog-agent ./cmd/activitylog-agent && \
 	$(call sign,$$dir/activitylog-agent) && \
 	cp README.md ../LICENSE $$dir/ && \
-	tar -C build -czf $(DIST)/activitylog-agent-$(VERSION)-darwin-universal.tar.gz $$(basename $$dir)
+	tar -C build -czf $(DIST)/activitylog-agent-$(VERSION)-darwin-arm64.tar.gz $$(basename $$dir)
 
 release-linux:
 	mkdir -p $(DIST)

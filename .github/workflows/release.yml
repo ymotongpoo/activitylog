@@ -99,7 +99,7 @@ jobs:
         run: |
           set -eu
           version="${GITHUB_REF_NAME#v}"
-          sha="$(sha256sum "dist/activitylog-agent-$version-darwin-universal.tar.gz" | cut -d' ' -f1)"
+          sha="$(sha256sum "dist/activitylog-agent-$version-darwin-arm64.tar.gz" | cut -d' ' -f1)"
           gh auth setup-git
           gh repo clone ymotongpoo/homebrew-macos tap -- --depth 1
           cd tap
