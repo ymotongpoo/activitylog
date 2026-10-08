@@ -47,8 +47,11 @@ func runDoctor(cfgPath string, send, prompt bool) int {
 		check(false, "configuration: %v", err)
 		return 1
 	}
-	_, statErr := os.Stat(cfg.Path)
-	check(statErr == nil, "configuration file %s", cfg.Path)
+	if exists(cfg.Path) {
+		check(true, "configuration file %s", cfg.Path)
+	} else {
+		info("no configuration file at %s; using the defaults", cfg.Path)
+	}
 	err = cfg.Validate()
 	check(err == nil, "configuration is valid")
 	if err != nil {
