@@ -31,7 +31,17 @@
     <string name="button_usage_access">Open Usage Access settings</string>
     <string name="button_accessibility">Open Accessibility settings</string>
     <string name="button_app_info">Open app info (battery, restricted settings)</string>
-    <string name="permission_status">Usage Access: %1$s\nAccessibility (browser URLs): %2$s</string>
+    <string name="permission_status">Usage Access: %1$s\nAccessibility (browser URLs): %2$s\nLocation: %3$s</string>
+    <string name="location_all_the_time_precise">precise, all the time</string>
+    <string name="location_all_the_time_approximate">approximate, all the time</string>
+    <string name="location_while_in_use">only while in use (choose \"Allow all the time\")</string>
+    <string name="button_location">Grant location (all the time)</string>
+    <string name="section_location">Location</string>
+    <string name="label_location_enabled">Record location (device.location logs)</string>
+    <string name="label_location_precision">Coordinate precision</string>
+    <string name="location_precision_full">as reported</string>
+    <string name="location_precision_100m">~100 m</string>
+    <string name="location_precision_1km">~1 km</string>
     <string name="granted">granted</string>
     <string name="not_granted">NOT granted</string>
 

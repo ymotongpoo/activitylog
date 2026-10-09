@@ -8,6 +8,10 @@
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
+    <!-- Optional location recording; "Allow all the time" because the periodic job reads it. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <!-- Needed to resolve labels and categories of other apps; this app is sideloaded only. -->
     <uses-permission
         android:name="android.permission.QUERY_ALL_PACKAGES"
@@ -45,6 +49,10 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service_config" />
         </service>
+
+        <receiver
+            android:name=".location.LocationReceiver"
+            android:exported="false" />
 
         <receiver
             android:name=".work.BootReceiver"

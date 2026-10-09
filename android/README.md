@@ -106,6 +106,16 @@ Android 13 以降では、ストア以外（Firebase App Tester や adb を含�
 - **Excluded domains**: ドメインへの glob（例 `*.example-bank.co.jp`。この例は `example-bank.co.jp` そのものにはマッチしない）。マッチした URL は `browser.tab` スパンもドメイン別の時間も作らない。
 - **URL in url.full**: `full`（そのまま）、`path`（クエリとフラグメントを落とす。既定）、`domain`（スキームとホストだけ）、`none`（`url.full` と `url.path` を付けない）。`url.domain` と `url.scheme` はどのモードでも付ける。
 
+## 位置の記録
+
+設定画面の「Location」で「Record location」をオンにすると、移動の記録として位置を `device.location` ログで送る。デフォルトはオフ。
+
+- 15 分ごとの定期ジョブで現在地を 1 回取得する。加えて、地図アプリなどほかのアプリが位置を要求したときの位置も受け取る（passive。電池をほとんど使わない）。
+- 定期ジョブはバックグラウンドで動くので、位置の権限は「常に許可」が必要。「Grant location (all the time)」を押すと、まず「アプリの使用中のみ」を許可するダイアログが出て、続いて権限の設定画面が開くので「常に許可」を選ぶ。
+- 座標は「Coordinate precision」で丸められる（as reported、約 100 m、約 1 km）。
+- 送る属性は `geo.location.lat`、`geo.location.lon`、`activity.location.accuracy`（m）などで、ログの時刻は測位した時刻。スパンやメトリクスには付けない。
+- ダッシュボードの「Locations (Android)」パネルで地図に表示できる。
+
 ## 注意点
 
 - URL の取得は Chrome 系ブラウザのアドレスバーのビュー ID（`<パッケージ名>:id/url_bar`、予備として `location_bar_status`）に頼っている。ブラウザの更新で ID が変わると取れなくなる。対象は Chrome（Stable / Beta / Dev）、Brave、Edge、Vivaldi、Chromium。

@@ -27,6 +27,9 @@ import net.ymotongpoo.activitylog.otlp.attr
 import net.ymotongpoo.activitylog.otlp.millisToNanos
 import net.ymotongpoo.activitylog.settings.AppSettings
 import net.ymotongpoo.activitylog.settings.Permissions
+import net.ymotongpoo.activitylog.location.LocationCollector
+import net.ymotongpoo.activitylog.location.LocationLogs
+import net.ymotongpoo.activitylog.location.LocationQueue
 import net.ymotongpoo.activitylog.settings.SettingsStore
 import net.ymotongpoo.activitylog.settings.StatusStore
 import org.json.JSONException
@@ -47,6 +50,7 @@ class Pipeline(context: Context) {
     private val stateStore = StateStore(File(ctx.filesDir, "state.json"))
     private val queue = ObservationQueue(ctx.filesDir)
     private val spool = Spool(File(ctx.filesDir, "spool"))
+    private val locationQueue = LocationQueue(ctx.filesDir)
 
     fun collectAndSend(): FlushResult = synchronized(LOCK) {
         val settings = settingsStore.load()
@@ -69,6 +73,21 @@ class Pipeline(context: Context) {
         val logs = mutableListOf<LogData>()
 
         agentLogs(state, nowMs, logs)
+
+        // Location is independent of Usage Access. Fixes queued while the
+        // feature was on but that arrive after it was turned off are dropped.
+        if (settings.locationEnabled) {
+            val collector = LocationCollector(ctx)
+            collector.registerPassive()
+            collector.currentFix(LOCATION_TIMEOUT_MS)?.let { locationQueue.append(it) }
+        }
+        val fixes = locationQueue.beginDrain()
+        val locationLogs = if (settings.locationEnabled) {
+            LocationLogs.build(fixes, settings.locationPrecision, nowMs)
+        } else {
+            emptyList()
+        }
+        logs += locationLogs
 
         var spans: List<SpanData> = emptyList()
         val usageGranted = state.agent.usageAccessGranted == true
@@ -107,6 +126,7 @@ class Pipeline(context: Context) {
 
         stateStore.save(state)
         if (usageGranted) queue.commitDrain()
+        locationQueue.commitDrain()
         status.removePending(diagnostics)
         if (dropped.isNotEmpty()) {
             status.diagnostic(Severity.WARN, "Spool full: dropped ${dropped.size} oldest payload(s)")
@@ -114,9 +134,10 @@ class Pipeline(context: Context) {
         status.recordRun(
             nowMs,
             if (usageGranted) {
-                "${spans.size} span(s), ${logs.size} log(s), ${observations.size} browser observation(s)"
+                "${spans.size} span(s), ${logs.size} log(s), ${observations.size} browser observation(s), " +
+                    "${locationLogs.size} location(s)"
             } else {
-                "Usage Access not granted; nothing collected"
+                "Usage Access not granted; ${locationLogs.size} location(s) collected"
             },
         )
     }
@@ -162,6 +183,9 @@ class Pipeline(context: Context) {
         }
         if (reason != null || agent.accessibilityEnabled != accessibility) {
             logs += permissionLog(nowMs, "accessibility", accessibility)
+        }
+        if (reason != null) {
+            logs += permissionLog(nowMs, "background_location", Permissions.hasBackgroundLocation(ctx))
         }
         agent.usageAccessGranted = usage
         agent.accessibilityEnabled = accessibility
@@ -230,6 +254,7 @@ class Pipeline(context: Context) {
     companion object {
         private const val TAG = "activitylog"
         private const val MAX_ITEMS_PER_REQUEST = 1000
+        private const val LOCATION_TIMEOUT_MS = 20_000L
         private val LOCK = Any()
     }
 }

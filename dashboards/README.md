@@ -19,6 +19,12 @@
 
 既定の期間は今日の 0 時から現在まで（`now/d` 〜 `now`）。
 
+## 位置の地図
+
+「Location」行の「Locations (Android)」は、Android アプリの `device.location` ログを Geomap に表示する。
+Loki の structured metadata（`geo_location_lat`、`geo_location_lon`）を Extract fields の変換で取り出して数値に変換している。
+位置の記録がオフのとき（デフォルト）は何も表示されない。
+
 ## ラベル名
 
 Grafana Cloud の OTLP 取り込みでは、属性名の `.` が `_` に変わる。

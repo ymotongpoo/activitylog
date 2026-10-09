@@ -1422,6 +1422,123 @@
         "showCommonLabels": false,
         "showLabels": false
       }
+    },
+    {
+      "type": "row",
+      "title": "Location",
+      "id": 26,
+      "gridPos": {
+        "x": 0,
+        "y": 89,
+        "w": 24,
+        "h": 1
+      },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "geomap",
+      "title": "Locations (Android)",
+      "id": 27,
+      "gridPos": {
+        "x": 0,
+        "y": 90,
+        "w": 24,
+        "h": 14
+      },
+      "description": "device.location logs from the Android app. Structured metadata geo_location_lat/lon are extracted from the log labels.",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "queryType": "range",
+          "maxLines": 5000,
+          "expr": "{service_namespace=\"activitylog\", service_instance_id=~\"${instance:pipe}\"} | event_name=\"device.location\""
+        }
+      ],
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "labels",
+            "format": "auto",
+            "replace": false,
+            "keepTime": false
+          }
+        },
+        {
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [
+              {
+                "targetField": "geo_location_lat",
+                "destinationType": "number"
+              },
+              {
+                "targetField": "geo_location_lon",
+                "destinationType": "number"
+              }
+            ]
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "view": {
+          "id": "fit",
+          "lat": 0,
+          "lon": 0,
+          "zoom": 2,
+          "allLayers": true
+        },
+        "controls": {
+          "showZoom": true,
+          "mouseWheelZoom": true,
+          "showAttribution": true
+        },
+        "basemap": {
+          "type": "default",
+          "name": "Basemap"
+        },
+        "layers": [
+          {
+            "type": "markers",
+            "name": "Locations",
+            "tooltip": true,
+            "location": {
+              "mode": "coords",
+              "latitude": "geo_location_lat",
+              "longitude": "geo_location_lon"
+            },
+            "config": {
+              "showLegend": false,
+              "style": {
+                "size": {
+                  "fixed": 5
+                },
+                "color": {
+                  "fixed": "blue"
+                },
+                "opacity": 0.6
+              }
+            }
+          }
+        ],
+        "tooltip": {
+          "mode": "details"
+        }
+      }
     }
   ],
   "refresh": "1m",

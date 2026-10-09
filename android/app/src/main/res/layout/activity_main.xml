@@ -128,6 +128,46 @@
                 android:text="@string/url_mode_none" />
         </RadioGroup>
 
+        <TextView
+            style="@style/SectionTitle"
+            android:text="@string/section_location" />
+
+        <CheckBox
+            android:id="@+id/location_enabled"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/label_location_enabled" />
+
+        <TextView
+            style="@style/FieldLabel"
+            android:text="@string/label_location_precision" />
+
+        <RadioGroup
+            android:id="@+id/location_precision"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/location_precision_full"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/location_precision_full" />
+
+            <RadioButton
+                android:id="@+id/location_precision_100m"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/location_precision_100m" />
+
+            <RadioButton
+                android:id="@+id/location_precision_1km"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/location_precision_1km" />
+        </RadioGroup>
+
         <LinearLayout
             style="?android:attr/buttonBarStyle"
             android:layout_width="match_parent"
@@ -170,6 +210,11 @@
             android:id="@+id/open_accessibility"
             style="@style/WideButton"
             android:text="@string/button_accessibility" />
+
+        <Button
+            android:id="@+id/open_location"
+            style="@style/WideButton"
+            android:text="@string/button_location" />
 
         <Button
             android:id="@+id/open_app_info"

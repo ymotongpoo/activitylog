@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.core.content.edit
 import net.ymotongpoo.activitylog.collect.PrivacyPolicy
 import net.ymotongpoo.activitylog.collect.UrlMode
+import net.ymotongpoo.activitylog.location.LocationPrecision
 
 data class AppSettings(
     val endpoint: String,
@@ -13,6 +14,8 @@ data class AppSettings(
     val excludedPackages: String,
     val excludedDomains: String,
     val urlMode: UrlMode,
+    val locationEnabled: Boolean = false,
+    val locationPrecision: LocationPrecision = LocationPrecision.FULL,
 ) {
     val isExportConfigured: Boolean
         get() = missingExportSettings().isEmpty()
@@ -43,6 +46,8 @@ class SettingsStore(context: Context) {
         excludedPackages = prefs.getString(KEY_EXCLUDED_PACKAGES, null).orEmpty(),
         excludedDomains = prefs.getString(KEY_EXCLUDED_DOMAINS, null).orEmpty(),
         urlMode = UrlMode.fromId(prefs.getString(KEY_URL_MODE, null)),
+        locationEnabled = prefs.getBoolean(KEY_LOCATION_ENABLED, false),
+        locationPrecision = LocationPrecision.fromId(prefs.getString(KEY_LOCATION_PRECISION, null)),
     )
 
     fun hasToken(): Boolean = prefs.contains(KEY_TOKEN)
@@ -61,6 +66,8 @@ class SettingsStore(context: Context) {
             putString(KEY_EXCLUDED_PACKAGES, settings.excludedPackages)
             putString(KEY_EXCLUDED_DOMAINS, settings.excludedDomains)
             putString(KEY_URL_MODE, settings.urlMode.id)
+            putBoolean(KEY_LOCATION_ENABLED, settings.locationEnabled)
+            putString(KEY_LOCATION_PRECISION, settings.locationPrecision.id)
             if (encrypted != null) putString(KEY_TOKEN, encrypted)
         }
     }
@@ -78,5 +85,7 @@ class SettingsStore(context: Context) {
         const val KEY_EXCLUDED_PACKAGES = "excluded_packages"
         const val KEY_EXCLUDED_DOMAINS = "excluded_domains"
         const val KEY_URL_MODE = "url_mode"
+        const val KEY_LOCATION_ENABLED = "location_enabled"
+        const val KEY_LOCATION_PRECISION = "location_precision"
     }
 }

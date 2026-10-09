@@ -27,6 +27,20 @@ object Permissions {
         }
     }
 
+    fun hasForegroundLocation(context: Context): Boolean =
+        granted(context, android.Manifest.permission.ACCESS_FINE_LOCATION) ||
+            granted(context, android.Manifest.permission.ACCESS_COARSE_LOCATION)
+
+    fun hasPreciseLocation(context: Context): Boolean =
+        granted(context, android.Manifest.permission.ACCESS_FINE_LOCATION)
+
+    /** "Allow all the time", which the periodic collection job needs. */
+    fun hasBackgroundLocation(context: Context): Boolean =
+        hasForegroundLocation(context) && granted(context, android.Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+
+    private fun granted(context: Context, permission: String): Boolean =
+        context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+
     fun isAccessibilityEnabled(context: Context): Boolean {
         val enabled = Settings.Secure.getString(
             context.contentResolver,

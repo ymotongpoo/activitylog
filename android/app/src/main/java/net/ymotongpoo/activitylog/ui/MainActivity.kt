@@ -1,5 +1,6 @@
 package net.ymotongpoo.activitylog.ui
 
+import android.Manifest
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
@@ -8,6 +9,7 @@ import android.os.Bundle
 import android.provider.Settings
 import android.view.View
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.RadioGroup
 import android.widget.TextView
@@ -17,6 +19,8 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import net.ymotongpoo.activitylog.R
 import net.ymotongpoo.activitylog.collect.UrlMode
+import net.ymotongpoo.activitylog.location.LocationCollector
+import net.ymotongpoo.activitylog.location.LocationPrecision
 import net.ymotongpoo.activitylog.otlp.DeviceInfo
 import net.ymotongpoo.activitylog.otlp.Spool
 import net.ymotongpoo.activitylog.settings.AppSettings
@@ -40,12 +44,20 @@ class MainActivity : Activity() {
     private lateinit var excludedPackages: EditText
     private lateinit var excludedDomains: EditText
     private lateinit var urlMode: RadioGroup
+    private lateinit var locationEnabled: CheckBox
+    private lateinit var locationPrecision: RadioGroup
     private lateinit var permissionStatus: TextView
     private lateinit var status: TextView
     private lateinit var diagnostics: TextView
 
     // Kept as a field: SharedPreferences holds listeners weakly.
     private val statusListener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> refreshStatus() }
+
+    private val precisionIds = mapOf(
+        LocationPrecision.FULL to R.id.location_precision_full,
+        LocationPrecision.M100 to R.id.location_precision_100m,
+        LocationPrecision.KM1 to R.id.location_precision_1km,
+    )
 
     private val urlModeIds = mapOf(
         UrlMode.FULL to R.id.url_mode_full,
@@ -74,6 +86,8 @@ class MainActivity : Activity() {
         excludedPackages = findViewById(R.id.excluded_packages)
         excludedDomains = findViewById(R.id.excluded_domains)
         urlMode = findViewById(R.id.url_mode)
+        locationEnabled = findViewById(R.id.location_enabled)
+        locationPrecision = findViewById(R.id.location_precision)
         permissionStatus = findViewById(R.id.permission_status)
         status = findViewById(R.id.status)
         diagnostics = findViewById(R.id.diagnostics)
@@ -101,6 +115,11 @@ class MainActivity : Activity() {
         }
         findViewById<Button>(R.id.open_app_info).setOnClickListener {
             open(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:$packageName".toUri()))
+        }
+        findViewById<Button>(R.id.open_location).setOnClickListener { requestLocationPermission() }
+        locationEnabled.setOnCheckedChangeListener { _, checked ->
+            saveSettings()
+            if (checked && !Permissions.hasBackgroundLocation(this)) requestLocationPermission()
         }
         findViewById<Button>(R.id.send_now).setOnClickListener {
             saveSettings()
@@ -134,6 +153,8 @@ class MainActivity : Activity() {
         excludedPackages.setText(s.excludedPackages)
         excludedDomains.setText(s.excludedDomains)
         urlMode.check(urlModeIds.getValue(s.urlMode))
+        locationEnabled.isChecked = s.locationEnabled
+        locationPrecision.check(precisionIds.getValue(s.locationPrecision))
         updateTokenHint()
     }
 
@@ -149,9 +170,14 @@ class MainActivity : Activity() {
                 excludedPackages = excludedPackages.text.toString(),
                 excludedDomains = excludedDomains.text.toString(),
                 urlMode = mode,
+                locationEnabled = locationEnabled.isChecked,
+                locationPrecision = precisionIds.entries
+                    .firstOrNull { it.value == locationPrecision.checkedRadioButtonId }?.key ?: LocationPrecision.FULL,
             ),
             newToken,
         )
+        val collector = LocationCollector(this)
+        if (locationEnabled.isChecked) collector.registerPassive() else collector.unregisterPassive()
         token.text.clear()
         updateTokenHint()
         refreshStatus()
@@ -175,6 +201,40 @@ class MainActivity : Activity() {
         token.setHint(if (settingsStore.hasToken()) R.string.hint_token_saved else R.string.hint_token_empty)
     }
 
+    /**
+     * Asks for location in the two steps Android requires: while-in-use first,
+     * then "Allow all the time", which Android 11+ grants only on the app's
+     * permission page that this request opens.
+     */
+    private fun requestLocationPermission() {
+        when {
+            !Permissions.hasForegroundLocation(this) -> requestPermissions(
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
+                REQUEST_LOCATION,
+            )
+            !Permissions.hasBackgroundLocation(this) -> requestPermissions(
+                arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION),
+                REQUEST_BACKGROUND_LOCATION,
+            )
+            else -> startActivity(
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:$packageName".toUri()),
+            )
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        refreshPermissions()
+        if (requestCode == REQUEST_LOCATION && Permissions.hasForegroundLocation(this) &&
+            !Permissions.hasBackgroundLocation(this)
+        ) {
+            requestLocationPermission()
+        }
+        if (Permissions.hasBackgroundLocation(this) && locationEnabled.isChecked) {
+            LocationCollector(this).registerPassive()
+        }
+    }
+
     private fun refreshPermissions() {
         val yes = getString(R.string.granted)
         val no = getString(R.string.not_granted)
@@ -182,6 +242,13 @@ class MainActivity : Activity() {
             R.string.permission_status,
             if (Permissions.hasUsageAccess(this)) yes else no,
             if (Permissions.isAccessibilityEnabled(this)) yes else no,
+            when {
+                Permissions.hasBackgroundLocation(this) && Permissions.hasPreciseLocation(this) ->
+                    getString(R.string.location_all_the_time_precise)
+                Permissions.hasBackgroundLocation(this) -> getString(R.string.location_all_the_time_approximate)
+                Permissions.hasForegroundLocation(this) -> getString(R.string.location_while_in_use)
+                else -> no
+            },
         )
         deviceName.hint = getString(R.string.hint_device_name, DeviceInfo.defaultDeviceName(this))
     }
@@ -220,5 +287,10 @@ class MainActivity : Activity() {
         } catch (_: ActivityNotFoundException) {
             startActivity(Intent(Settings.ACTION_SETTINGS))
         }
+    }
+
+    private companion object {
+        const val REQUEST_LOCATION = 1
+        const val REQUEST_BACKGROUND_LOCATION = 2
     }
 }
