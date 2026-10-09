@@ -7,11 +7,12 @@ Grafana Cloud 用のダッシュボード。
 |---|---|
 | `activitylog.json` | 全デバイス（macOS、Linux、Android）の概要 |
 | `android.json` | Android アプリ専用。画面時間、アプリ、ロック解除、移動経路と速度 |
+| `linux.json`、`macos.json` | デスクトップエージェント専用。アクティブ時間、アプリ、ブラウザー、エディター、ターミナル。`target_info` の `os_type` でデバイスを絞る |
 
 ## インポート
 
 1. Grafana Cloud で **Dashboards → New → Import** を開く。
-2. `activitylog.json` または `android.json` をアップロードするか、内容を貼り付けて **Load** を押す。
+2. 上の JSON のどれかをアップロードするか、内容を貼り付けて **Load** を押す。
 3. 必要ならフォルダーと UID を変えて **Import** を押す。
 4. ダッシュボード上部の変数で、データソースを選ぶ。
 
@@ -24,7 +25,8 @@ Grafana Cloud 用のダッシュボード。
 
 既定の期間は今日の 0 時から現在まで（`now/d` 〜 `now`）。
 
-`android.json` は既定の期間が直近 24 時間で、データソース変数は `grafanacloud-<stack>-prom` などを自動で選ぶ。
+`android.json`、`linux.json`、`macos.json` は既定の期間が直近 24 時間で、データソース変数は `grafanacloud-<stack>-prom` などを自動で選ぶ。
+ブラウザー、エディター、ターミナルの行は、拡張機能やシェルのフックを入れていないと空になる。
 
 ## 位置の地図
 

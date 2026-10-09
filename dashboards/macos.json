@@ -1,10 +1,10 @@
 {
-  "title": "Android",
-  "uid": "activitylog-android",
-  "description": "Phone usage from the activitylog Android app: screen time, apps, unlocks and location.",
+  "title": "macOS",
+  "uid": "activitylog-macos",
+  "description": "Activity from the activitylog agent on macOS: active time, apps, browser, editor and terminal.",
   "tags": [
     "activitylog",
-    "android",
+    "macos",
     "opentelemetry"
   ],
   "timezone": "browser",
@@ -81,12 +81,11 @@
           "type": "prometheus",
           "uid": "${prom}"
         },
-        "query": "label_values(activity_time_seconds_total{job=\"activitylog/activitylog-android\"}, instance)",
-        "definition": "label_values(activity_time_seconds_total{job=\"activitylog/activitylog-android\"}, instance)",
+        "query": "label_values(target_info{job=\"activitylog/activitylog-agent\", os_type=\"darwin\"}, instance)",
+        "definition": "label_values(target_info{job=\"activitylog/activitylog-agent\", os_type=\"darwin\"}, instance)",
         "current": {},
         "hide": 0,
         "includeAll": true,
-        "allValue": ".*",
         "multi": true,
         "options": [],
         "refresh": 2,
@@ -128,8 +127,8 @@
     },
     {
       "type": "stat",
-      "title": "Screen time",
-      "description": "Time the device was in use (screen on and unlocked) in the selected range.",
+      "title": "Active time",
+      "description": "Time with input from the user in the selected range.",
       "id": 2,
       "gridPos": {
         "x": 0,
@@ -149,7 +148,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sum(increase(activity_time_seconds_total{job=\"activitylog/activitylog-android\", instance=~\"$device\", activity_state=\"active\"}[$__range]))",
+          "expr": "sum(increase(activity_time_seconds_total{job=\"activitylog/activitylog-agent\", instance=~\"$device\", activity_state=\"active\"}[$__range]))",
           "legendFormat": "__auto",
           "range": false,
           "instant": true
@@ -160,8 +159,9 @@
           "unit": "s",
           "color": {
             "mode": "fixed",
-            "fixedColor": "blue"
-          }
+            "fixedColor": "green"
+          },
+          "noValue": "0"
         },
         "overrides": []
       },
@@ -184,8 +184,8 @@
     },
     {
       "type": "stat",
-      "title": "Unlocks",
-      "description": "Number of device unlocks in the selected range.",
+      "title": "AFK time",
+      "description": "Time away from the keyboard (idle, locked or asleep) while the agent was running.",
       "id": 3,
       "gridPos": {
         "x": 4,
@@ -205,7 +205,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sum(increase(activity_device_unlocks_total{job=\"activitylog/activitylog-android\", instance=~\"$device\"}[$__range]))",
+          "expr": "sum(increase(activity_time_seconds_total{job=\"activitylog/activitylog-agent\", instance=~\"$device\", activity_state=\"afk\"}[$__range]))",
           "legendFormat": "__auto",
           "range": false,
           "instant": true
@@ -213,12 +213,12 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "s",
           "color": {
             "mode": "fixed",
-            "fixedColor": "purple"
+            "fixedColor": "text"
           },
-          "decimals": 0
+          "noValue": "0"
         },
         "overrides": []
       },
@@ -241,8 +241,8 @@
     },
     {
       "type": "stat",
-      "title": "Screen time per unlock",
-      "description": "Average screen time per unlock.",
+      "title": "Active share",
+      "description": "Active time divided by the time the agent was running.",
       "id": 4,
       "gridPos": {
         "x": 8,
@@ -262,7 +262,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sum(increase(activity_time_seconds_total{job=\"activitylog/activitylog-android\", instance=~\"$device\", activity_state=\"active\"}[$__range])) / sum(increase(activity_device_unlocks_total{job=\"activitylog/activitylog-android\", instance=~\"$device\"}[$__range]))",
+          "expr": "sum(increase(activity_time_seconds_total{job=\"activitylog/activitylog-agent\", instance=~\"$device\", activity_state=\"active\"}[$__range])) / (sum(increase(activity_time_seconds_total{job=\"activitylog/activitylog-agent\", instance=~\"$device\", activity_state=\"active\"}[$__range])) + sum(increase(activity_time_seconds_total{job=\"activitylog/activitylog-agent\", instance=~\"$device\", activity_state=\"afk\"}[$__range])))",
           "legendFormat": "__auto",
           "range": false,
           "instant": true
@@ -270,11 +270,13 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "s",
+          "unit": "percentunit",
           "color": {
             "mode": "fixed",
-            "fixedColor": "blue"
-          }
+            "fixedColor": "green"
+          },
+          "noValue": "0",
+          "decimals": 0
         },
         "overrides": []
       },
@@ -318,7 +320,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "count(sum by (activity_app_id) (increase(activity_app_time_seconds_total{job=\"activitylog/activitylog-android\", instance=~\"$device\"}[$__range])) >= 60)",
+          "expr": "count(sum by (activity_app_id) (increase(activity_app_time_seconds_total{job=\"activitylog/activitylog-agent\", instance=~\"$device\"}[$__range])) >= 60)",
           "legendFormat": "__auto",
           "range": false,
           "instant": true
@@ -326,11 +328,12 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "color": {
             "mode": "fixed",
-            "fixedColor": "green"
+            "fixedColor": "blue"
           },
+          "noValue": "0",
           "decimals": 0
         },
         "overrides": []
@@ -354,8 +357,8 @@
     },
     {
       "type": "stat",
-      "title": "App switches",
-      "description": "activity.app.switch log events.",
+      "title": "Commands",
+      "description": "Shell commands executed. Needs the shell hooks.",
       "id": 6,
       "gridPos": {
         "x": 16,
@@ -364,19 +367,21 @@
         "h": 4
       },
       "datasource": {
-        "type": "loki",
-        "uid": "${loki}"
+        "type": "prometheus",
+        "uid": "${prom}"
       },
       "targets": [
         {
           "datasource": {
-            "type": "loki",
-            "uid": "${loki}"
+            "type": "prometheus",
+            "uid": "${prom}"
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sum(count_over_time({service_name=\"activitylog-android\", service_instance_id=~\"${device:pipe}\"} | event_name=\"activity.app.switch\" [$__range]))",
-          "queryType": "instant"
+          "expr": "sum(increase(activity_terminal_commands_total{job=\"activitylog/activitylog-agent\", instance=~\"$device\"}[$__range]))",
+          "legendFormat": "__auto",
+          "range": false,
+          "instant": true
         }
       ],
       "fieldConfig": {
@@ -384,8 +389,9 @@
           "unit": "none",
           "color": {
             "mode": "fixed",
-            "fixedColor": "orange"
+            "fixedColor": "purple"
           },
+          "noValue": "0",
           "decimals": 0
         },
         "overrides": []
@@ -409,8 +415,8 @@
     },
     {
       "type": "stat",
-      "title": "Location fixes",
-      "description": "device.location log events. 0 when location recording is off.",
+      "title": "Failed commands",
+      "description": "Shell commands that exited with a non-zero status.",
       "id": 7,
       "gridPos": {
         "x": 20,
@@ -419,19 +425,21 @@
         "h": 4
       },
       "datasource": {
-        "type": "loki",
-        "uid": "${loki}"
+        "type": "prometheus",
+        "uid": "${prom}"
       },
       "targets": [
         {
           "datasource": {
-            "type": "loki",
-            "uid": "${loki}"
+            "type": "prometheus",
+            "uid": "${prom}"
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sum(count_over_time({service_name=\"activitylog-android\", service_instance_id=~\"${device:pipe}\"} | event_name=\"device.location\" [$__range]))",
-          "queryType": "instant"
+          "expr": "sum(increase(activity_terminal_commands_total{job=\"activitylog/activitylog-agent\", instance=~\"$device\", activity_terminal_command_status=\"error\"}[$__range]))",
+          "legendFormat": "__auto",
+          "range": false,
+          "instant": true
         }
       ],
       "fieldConfig": {
@@ -439,8 +447,9 @@
           "unit": "none",
           "color": {
             "mode": "fixed",
-            "fixedColor": "teal"
+            "fixedColor": "red"
           },
+          "noValue": "0",
           "decimals": 0
         },
         "overrides": []
@@ -464,8 +473,8 @@
     },
     {
       "type": "timeseries",
-      "title": "Screen time per hour by category",
-      "description": "Foreground time per app category, per hour. The app sends metrics about every 15 minutes, so finer steps are not meaningful.",
+      "title": "Active and AFK per hour",
+      "description": "Time per activity state, per hour.",
       "id": 8,
       "gridPos": {
         "x": 0,
@@ -485,8 +494,8 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sum by (activity_category) (increase(activity_category_time_seconds_total{job=\"activitylog/activitylog-android\", instance=~\"$device\"}[$__interval]))",
-          "legendFormat": "{{activity_category}}",
+          "expr": "sum by (activity_state) (increase(activity_time_seconds_total{job=\"activitylog/activitylog-agent\", instance=~\"$device\", activity_state=~\"active|afk\"}[$__interval]))",
+          "legendFormat": "{{activity_state}}",
           "range": true,
           "instant": false,
           "interval": "1h"
@@ -511,7 +520,38 @@
             "mode": "palette-classic"
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "active"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "afk"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5a5a66"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -529,7 +569,7 @@
     {
       "type": "piechart",
       "title": "Categories",
-      "description": "Share of foreground time per app category in the selected range.",
+      "description": "Share of active time per category in the selected range.",
       "id": 9,
       "gridPos": {
         "x": 16,
@@ -549,7 +589,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sum by (activity_category) (increase(activity_category_time_seconds_total{job=\"activitylog/activitylog-android\", instance=~\"$device\"}[$__range]))",
+          "expr": "sum by (activity_category) (increase(activity_category_time_seconds_total{job=\"activitylog/activitylog-agent\", instance=~\"$device\"}[$__range]))",
           "legendFormat": "{{activity_category}}",
           "range": false,
           "instant": true
@@ -604,7 +644,7 @@
     {
       "type": "bargauge",
       "title": "Top apps",
-      "description": "Foreground time per app in the selected range (top 15).",
+      "description": "Active time per foreground app in the selected range (top 15). In terminal mode the app is the foreground process of the terminal.",
       "id": 11,
       "gridPos": {
         "x": 0,
@@ -624,7 +664,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sort_desc(topk(15, sum by (activity_app_name) (increase(activity_app_time_seconds_total{job=\"activitylog/activitylog-android\", instance=~\"$device\"}[$__range]))))",
+          "expr": "sort_desc(topk(15, sum by (activity_app_name) (increase(activity_app_time_seconds_total{job=\"activitylog/activitylog-agent\", instance=~\"$device\"}[$__range]))))",
           "legendFormat": "{{activity_app_name}}",
           "range": false,
           "instant": true
@@ -646,7 +686,7 @@
         "valueMode": "text",
         "showUnfilled": true,
         "namePlacement": "left",
-        "sizing": "auto",
+        "sizing": "manual",
         "minVizHeight": 16,
         "maxVizHeight": 24,
         "reduceOptions": {
@@ -661,7 +701,7 @@
     {
       "type": "timeseries",
       "title": "Top apps per hour",
-      "description": "Foreground time per hour of the 8 apps used most in the selected range.",
+      "description": "Active time per hour of the 8 apps used most in the selected range.",
       "id": 12,
       "gridPos": {
         "x": 10,
@@ -681,7 +721,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sum by (activity_app_name) (increase(activity_app_time_seconds_total{job=\"activitylog/activitylog-android\", instance=~\"$device\"}[$__interval])) and on (activity_app_name) topk(8, sum by (activity_app_name) (increase(activity_app_time_seconds_total{job=\"activitylog/activitylog-android\", instance=~\"$device\"}[$__range] @ end())))",
+          "expr": "sum by (activity_app_name) (increase(activity_app_time_seconds_total{job=\"activitylog/activitylog-agent\", instance=~\"$device\"}[$__interval])) and on (activity_app_name) topk(8, sum by (activity_app_name) (increase(activity_app_time_seconds_total{job=\"activitylog/activitylog-agent\", instance=~\"$device\"}[$__range] @ end())))",
           "legendFormat": "{{activity_app_name}}",
           "range": true,
           "instant": false,
@@ -723,15 +763,28 @@
       "interval": "1h"
     },
     {
-      "type": "timeseries",
-      "title": "Unlocks per hour",
-      "description": "Device unlocks per hour.",
+      "type": "row",
+      "title": "Browser",
       "id": 13,
+      "collapsed": false,
       "gridPos": {
         "x": 0,
         "y": 27,
-        "w": 12,
-        "h": 7
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "bargauge",
+      "title": "Top domains",
+      "description": "Active time per browser domain (top 15). Needs browser_domains in the agent config and, on Linux, the browser extension.",
+      "id": 14,
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 10,
+        "h": 10
       },
       "datasource": {
         "type": "prometheus",
@@ -745,146 +798,67 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sum(increase(activity_device_unlocks_total{job=\"activitylog/activitylog-android\", instance=~\"$device\"}[$__interval]))",
-          "legendFormat": "unlocks",
-          "range": true,
-          "instant": false,
-          "interval": "1h"
+          "expr": "sort_desc(topk(15, sum by (url_domain) (increase(activity_browser_domain_time_seconds_total{job=\"activitylog/activitylog-agent\", instance=~\"$device\"}[$__range]))))",
+          "legendFormat": "{{url_domain}}",
+          "range": false,
+          "instant": true
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
-          "decimals": 0,
-          "custom": {
-            "drawStyle": "bars",
-            "fillOpacity": 80,
-            "lineWidth": 1,
-            "barAlignment": 1,
-            "stacking": {
-              "mode": "normal",
-              "group": "A"
-            },
-            "showPoints": "never",
-            "axisSoftMin": 0
-          },
+          "unit": "s",
+          "min": 0,
           "color": {
-            "mode": "fixed",
-            "fixedColor": "purple"
+            "mode": "continuous-BlPu"
           }
         },
         "overrides": []
       },
       "options": {
-        "legend": {
-          "showLegend": false
-        },
-        "tooltip": {
-          "mode": "single"
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "valueMode": "text",
+        "showUnfilled": true,
+        "namePlacement": "left",
+        "sizing": "manual",
+        "minVizHeight": 16,
+        "maxVizHeight": 24,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
         }
-      },
-      "interval": "1h"
+      }
     },
     {
-      "type": "timeseries",
-      "title": "App switches per hour",
-      "description": "activity.app.switch events per hour.",
-      "id": 14,
-      "gridPos": {
-        "x": 12,
-        "y": 27,
-        "w": 12,
-        "h": 7
-      },
-      "datasource": {
-        "type": "loki",
-        "uid": "${loki}"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "loki",
-            "uid": "${loki}"
-          },
-          "refId": "A",
-          "editorMode": "code",
-          "expr": "sum(count_over_time({service_name=\"activitylog-android\", service_instance_id=~\"${device:pipe}\"} | event_name=\"activity.app.switch\" [$__interval]))",
-          "queryType": "range",
-          "legendFormat": "switches"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "decimals": 0,
-          "custom": {
-            "drawStyle": "bars",
-            "fillOpacity": 80,
-            "lineWidth": 1,
-            "barAlignment": 1,
-            "stacking": {
-              "mode": "normal",
-              "group": "A"
-            },
-            "showPoints": "never",
-            "axisSoftMin": 0
-          },
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "orange"
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "showLegend": false
-        },
-        "tooltip": {
-          "mode": "single"
-        }
-      },
-      "interval": "1h"
-    },
-    {
-      "type": "row",
-      "title": "Location",
+      "type": "table",
+      "title": "Recent tabs",
+      "description": "browser.tab spans: one per tab while it was focused.",
       "id": 15,
-      "collapsed": false,
       "gridPos": {
-        "x": 0,
-        "y": 34,
-        "w": 24,
-        "h": 1
-      },
-      "panels": []
-    },
-    {
-      "type": "geomap",
-      "title": "Route",
-      "description": "device.location logs from the Android app, connected in time order. Structured metadata geo_location_lat/lon are extracted from the log labels.",
-      "id": 16,
-      "gridPos": {
-        "x": 0,
-        "y": 35,
-        "w": 16,
-        "h": 16
+        "x": 10,
+        "y": 28,
+        "w": 14,
+        "h": 10
       },
       "datasource": {
-        "type": "loki",
-        "uid": "${loki}"
+        "type": "tempo",
+        "uid": "${tempo}"
       },
       "targets": [
         {
           "datasource": {
-            "type": "loki",
-            "uid": "${loki}"
+            "type": "tempo",
+            "uid": "${tempo}"
           },
           "refId": "A",
-          "editorMode": "code",
-          "expr": "{service_name=\"activitylog-android\", service_instance_id=~\"${device:pipe}\"} | event_name=\"device.location\"",
-          "queryType": "range",
-          "maxLines": 5000
+          "queryType": "traceql",
+          "limit": 50,
+          "spss": 1,
+          "tableType": "spans",
+          "query": "{resource.service.name=\"activitylog-agent\" && resource.service.instance.id=~\"${device:regex}\" && span.activity.context.kind=\"browser.tab\"} | select(span.url.domain, span.activity.browser.tab.title, span.activity.browser.name)"
         }
       ],
       "fieldConfig": {
@@ -892,196 +866,226 @@
         "overrides": []
       },
       "options": {
-        "view": {
-          "id": "fit",
-          "lat": 0,
-          "lon": 0,
-          "zoom": 12,
-          "allLayers": true
-        },
-        "controls": {
-          "showZoom": true,
-          "mouseWheelZoom": true,
-          "showAttribution": true
-        },
-        "basemap": {
-          "type": "default",
-          "name": "Basemap"
-        },
-        "layers": [
-          {
-            "type": "route",
-            "name": "Route",
-            "tooltip": true,
-            "location": {
-              "mode": "coords",
-              "latitude": "geo_location_lat",
-              "longitude": "geo_location_lon"
-            },
-            "config": {
-              "arrow": 0,
-              "style": {
-                "color": {
-                  "fixed": "#5794F2"
-                },
-                "lineWidth": 2,
-                "opacity": 0.8,
-                "size": {
-                  "fixed": 3,
-                  "min": 2,
-                  "max": 6
-                }
-              }
-            }
-          }
-        ],
-        "tooltip": {
-          "mode": "details"
-        }
-      },
-      "transformations": [
-        {
-          "id": "extractFields",
-          "options": {
-            "source": "labels",
-            "format": "auto",
-            "replace": false,
-            "keepTime": false
-          }
-        },
-        {
-          "id": "convertFieldType",
-          "options": {
-            "conversions": [
-              {
-                "targetField": "geo_location_lat",
-                "destinationType": "number"
-              },
-              {
-                "targetField": "geo_location_lon",
-                "destinationType": "number"
-              },
-              {
-                "targetField": "activity_location_accuracy",
-                "destinationType": "number"
-              }
-            ]
-          }
-        },
-        {
-          "id": "sortBy",
-          "options": {
-            "sort": [
-              {
-                "field": "Time"
-              }
-            ]
-          }
-        },
-        {
-          "id": "organize",
-          "options": {
-            "includeByName": {
-              "Time": true,
-              "geo_location_lat": true,
-              "geo_location_lon": true,
-              "activity_location_accuracy": true,
-              "activity_location_provider": true,
-              "activity_location_source": true
-            }
-          }
-        }
-      ]
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
     },
     {
-      "type": "timeseries",
-      "title": "Speed",
-      "description": "Average speed reported with the location fixes (km/h). Near 0 while staying in one place.",
+      "type": "row",
+      "title": "Editor",
+      "id": 16,
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 38,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "bargauge",
+      "title": "Top projects",
+      "description": "Active time per editor project (top 15). Needs the VS Code extension or the Neovim plugin.",
       "id": 17,
       "gridPos": {
-        "x": 16,
-        "y": 35,
+        "x": 0,
+        "y": 39,
         "w": 8,
-        "h": 8
+        "h": 10
       },
       "datasource": {
-        "type": "loki",
-        "uid": "${loki}"
+        "type": "prometheus",
+        "uid": "${prom}"
       },
       "targets": [
         {
           "datasource": {
-            "type": "loki",
-            "uid": "${loki}"
+            "type": "prometheus",
+            "uid": "${prom}"
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "avg(avg_over_time({service_name=\"activitylog-android\", service_instance_id=~\"${device:pipe}\"} | event_name=\"device.location\" | activity_location_speed != \"\" | unwrap activity_location_speed [$__interval])) * 3.6",
-          "queryType": "range",
-          "legendFormat": "speed"
+          "expr": "sort_desc(topk(15, sum by (activity_editor_project) (increase(activity_editor_project_time_seconds_total{job=\"activitylog/activitylog-agent\", instance=~\"$device\"}[$__range]))))",
+          "legendFormat": "{{activity_editor_project}}",
+          "range": false,
+          "instant": true
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "velocitykmh",
+          "unit": "s",
           "min": 0,
-          "decimals": 1,
-          "custom": {
-            "drawStyle": "line",
-            "lineWidth": 1,
-            "fillOpacity": 20,
-            "showPoints": "never",
-            "spanNulls": 1800000
-          },
           "color": {
-            "mode": "fixed",
-            "fixedColor": "teal"
+            "mode": "continuous-BlPu"
           }
         },
         "overrides": []
       },
       "options": {
-        "legend": {
-          "showLegend": false
-        },
-        "tooltip": {
-          "mode": "single"
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "valueMode": "text",
+        "showUnfilled": true,
+        "namePlacement": "left",
+        "sizing": "manual",
+        "minVizHeight": 16,
+        "maxVizHeight": 24,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
         }
-      },
-      "interval": "5m"
+      }
     },
     {
-      "type": "timeseries",
-      "title": "Location fixes per hour",
-      "description": "device.location events per hour, by how they were obtained: foreground (the 1-minute service), passive (fixes requested by other apps) or job (the 15-minute job).",
+      "type": "piechart",
+      "title": "Languages",
+      "description": "Share of editor time per language.",
       "id": 18,
       "gridPos": {
-        "x": 16,
-        "y": 43,
-        "w": 8,
-        "h": 8
+        "x": 8,
+        "y": 39,
+        "w": 6,
+        "h": 10
       },
       "datasource": {
-        "type": "loki",
-        "uid": "${loki}"
+        "type": "prometheus",
+        "uid": "${prom}"
       },
       "targets": [
         {
           "datasource": {
-            "type": "loki",
-            "uid": "${loki}"
+            "type": "prometheus",
+            "uid": "${prom}"
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sum by (activity_location_source) (count_over_time({service_name=\"activitylog-android\", service_instance_id=~\"${device:pipe}\"} | event_name=\"device.location\" [$__interval]))",
-          "queryType": "range",
-          "legendFormat": "{{activity_location_source}}"
+          "expr": "sum by (activity_editor_language) (increase(activity_editor_project_time_seconds_total{job=\"activitylog/activitylog-agent\", instance=~\"$device\", activity_editor_language!=\"\"}[$__range]))",
+          "legendFormat": "{{activity_editor_language}}",
+          "range": false,
+          "instant": true
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
-          "decimals": 0,
+          "unit": "s",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "right",
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
+        "tooltip": {
+          "mode": "single"
+        },
+        "displayLabels": []
+      }
+    },
+    {
+      "type": "table",
+      "title": "Recent files",
+      "description": "editor.file spans: one per file while it was focused.",
+      "id": 19,
+      "gridPos": {
+        "x": 14,
+        "y": 39,
+        "w": 10,
+        "h": 10
+      },
+      "datasource": {
+        "type": "tempo",
+        "uid": "${tempo}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "tempo",
+            "uid": "${tempo}"
+          },
+          "refId": "A",
+          "queryType": "traceql",
+          "limit": 50,
+          "spss": 1,
+          "tableType": "spans",
+          "query": "{resource.service.name=\"activitylog-agent\" && resource.service.instance.id=~\"${device:regex}\" && span.activity.context.kind=\"editor.file\"} | select(span.activity.editor.project, span.code.file.path, span.vcs.ref.head.name)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Terminal",
+      "id": 20,
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 49,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Commands per hour",
+      "description": "Shell commands per hour by exit status.",
+      "id": 21,
+      "gridPos": {
+        "x": 0,
+        "y": 50,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "sum by (activity_terminal_command_status) (increase(activity_terminal_commands_total{job=\"activitylog/activitylog-agent\", instance=~\"$device\"}[$__interval]))",
+          "legendFormat": "{{activity_terminal_command_status}}",
+          "range": true,
+          "instant": false,
+          "interval": "1h"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
           "custom": {
             "drawStyle": "bars",
             "fillOpacity": 80,
@@ -1096,9 +1100,41 @@
           },
           "color": {
             "mode": "palette-classic"
-          }
+          },
+          "decimals": 0
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ok"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -1107,32 +1143,77 @@
           "placement": "bottom"
         },
         "tooltip": {
-          "mode": "multi"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "interval": "1h"
     },
     {
-      "type": "row",
-      "title": "Sessions and events",
-      "id": 19,
-      "collapsed": false,
+      "type": "bargauge",
+      "title": "Top commands",
+      "description": "Most frequent commands (the first word) in the selected range.",
+      "id": 22,
       "gridPos": {
-        "x": 0,
-        "y": 51,
-        "w": 24,
-        "h": 1
+        "x": 12,
+        "y": 50,
+        "w": 12,
+        "h": 9
       },
-      "panels": []
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "sort_desc(topk(15, sum by (activity_terminal_command_name) (increase(activity_terminal_commands_total{job=\"activitylog/activitylog-agent\", instance=~\"$device\"}[$__range]))))",
+          "legendFormat": "{{activity_terminal_command_name}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "color": {
+            "mode": "continuous-BlPu"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "valueMode": "text",
+        "showUnfilled": true,
+        "namePlacement": "left",
+        "sizing": "manual",
+        "minVizHeight": 16,
+        "maxVizHeight": 24,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
     },
     {
       "type": "table",
-      "title": "Recent sessions",
-      "description": "active spans: one per period of use from unlock to screen off. Click a trace ID to open the apps used in the session.",
-      "id": 20,
+      "title": "Recent commands",
+      "description": "terminal.command spans: one per command with its duration and exit code.",
+      "id": 23,
       "gridPos": {
         "x": 0,
-        "y": 52,
+        "y": 59,
         "w": 12,
         "h": 10
       },
@@ -1149,8 +1230,9 @@
           "refId": "A",
           "queryType": "traceql",
           "limit": 50,
-          "tableType": "traces",
-          "query": "{resource.service.name=\"activitylog-android\" && resource.service.instance.id=~\"${device:regex}\" && name=\"active\"}"
+          "spss": 1,
+          "tableType": "spans",
+          "query": "{resource.service.name=\"activitylog-agent\" && resource.service.instance.id=~\"${device:regex}\" && name=\"terminal.command\"} | select(span.process.command, span.process.exit.code, span.activity.terminal.cwd)"
         }
       ],
       "fieldConfig": {
@@ -1163,14 +1245,65 @@
       }
     },
     {
-      "type": "logs",
-      "title": "Events",
-      "description": "App switches and screen events.",
-      "id": 21,
+      "type": "table",
+      "title": "Terminals",
+      "description": "terminal spans: one per terminal and working directory while it was in front.",
+      "id": 24,
       "gridPos": {
         "x": 12,
-        "y": 52,
+        "y": 59,
         "w": 12,
+        "h": 10
+      },
+      "datasource": {
+        "type": "tempo",
+        "uid": "${tempo}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "tempo",
+            "uid": "${tempo}"
+          },
+          "refId": "A",
+          "queryType": "traceql",
+          "limit": 50,
+          "spss": 1,
+          "tableType": "spans",
+          "query": "{resource.service.name=\"activitylog-agent\" && resource.service.instance.id=~\"${device:regex}\" && span.activity.context.kind=\"terminal\"} | select(span.activity.app.name, span.activity.terminal.cwd, span.activity.terminal.tty)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Events",
+      "id": 25,
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 69,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "logs",
+      "title": "Events",
+      "description": "App switches, AFK, sleep and agent events.",
+      "id": 26,
+      "gridPos": {
+        "x": 0,
+        "y": 70,
+        "w": 24,
         "h": 10
       },
       "datasource": {
@@ -1185,7 +1318,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "{service_name=\"activitylog-android\", service_instance_id=~\"${device:pipe}\"} | event_name=~\"activity.app.switch|activity.device.screen\"",
+          "expr": "{service_name=\"activitylog-agent\", service_instance_id=~\"${device:pipe}\"} | event_name=~\"activity.app.switch|activity.afk.start|activity.afk.end|system.sleep|agent.start|agent.stop|agent.diagnostic\"",
           "queryType": "range"
         }
       ],
