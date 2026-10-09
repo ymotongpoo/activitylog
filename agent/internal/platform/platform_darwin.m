@@ -57,47 +57,37 @@ static char *ax_window_title(pid_t pid) {
 	return result;
 }
 
-static pid_t ax_focused_pid(void) {
-	pid_t pid = 0;
-	AXUIElementRef sys = AXUIElementCreateSystemWide();
-	if (sys == NULL) {
-		return 0;
-	}
-	AXUIElementSetMessagingTimeout(sys, 0.5);
-	CFTypeRef app = NULL;
-	if (AXUIElementCopyAttributeValue(sys, kAXFocusedApplicationAttribute, &app) == kAXErrorSuccess && app != NULL) {
-		AXUIElementGetPid((AXUIElementRef)app, &pid);
-		CFRelease(app);
-	}
-	CFRelease(sys);
-	return pid;
-}
-
 int al_frontmost(al_window *w) {
-	@autoreleasepool {
-		memset(w, 0, sizeof(*w));
-		BOOL trusted = AXIsProcessTrusted();
-		NSRunningApplication *app = nil;
-		if (trusted) {
-			pid_t pid = ax_focused_pid();
-			if (pid > 0) {
-				app = [NSRunningApplication runningApplicationWithProcessIdentifier:pid];
+	memset(w, 0, sizeof(*w));
+	__block pid_t pid = 0;
+	__block char *name = NULL;
+	__block char *bundle = NULL;
+	// NSWorkspace updates frontmostApplication on the main thread; read
+	// from another thread it keeps the value of the first read. The
+	// focused application of the system-wide accessibility element is not
+	// an alternative: it fails for some applications such as Chrome.
+	dispatch_sync(dispatch_get_main_queue(), ^{
+		@autoreleasepool {
+			NSRunningApplication *app = [[NSWorkspace sharedWorkspace] frontmostApplication];
+			if (app != nil) {
+				pid = app.processIdentifier;
+				name = copy_string(app.localizedName);
+				bundle = copy_string(app.bundleIdentifier);
 			}
 		}
-		if (app == nil) {
-			app = [[NSWorkspace sharedWorkspace] frontmostApplication];
-		}
-		if (app == nil) {
-			return 0;
-		}
-		w->pid = app.processIdentifier;
-		w->app_name = copy_string(app.localizedName);
-		w->bundle_id = copy_string(app.bundleIdentifier);
-		if (trusted) {
-			w->title = ax_window_title(app.processIdentifier);
-		}
-		return 1;
+	});
+	if (pid == 0) {
+		free(name);
+		free(bundle);
+		return 0;
 	}
+	w->pid = pid;
+	w->app_name = name;
+	w->bundle_id = bundle;
+	if (AXIsProcessTrusted()) {
+		w->title = ax_window_title(pid);
+	}
+	return 1;
 }
 
 double al_idle_seconds(void) {
