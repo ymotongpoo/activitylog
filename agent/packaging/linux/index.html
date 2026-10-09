@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>activitylog apt repository</title>
+<style>body{font-family:system-ui,sans-serif;max-width:48rem;margin:2rem auto;padding:0 1rem;line-height:1.5}pre{background:#f4f4f4;padding:1rem;overflow-x:auto}</style>
+</head>
+<body>
+<h1>activitylog apt repository</h1>
+<p>Debian and Ubuntu packages of <a href="https://github.com/ymotongpoo/activitylog">activitylog-agent</a> for amd64 and arm64.</p>
+<pre>sudo curl -fsSL https://ymotongpoo.github.io/activitylog/apt/activitylog.gpg \
+  -o /usr/share/keyrings/activitylog.gpg
+echo "deb [signed-by=/usr/share/keyrings/activitylog.gpg] https://ymotongpoo.github.io/activitylog/apt stable main" \
+  | sudo tee /etc/apt/sources.list.d/activitylog.list
+sudo apt update
+sudo apt install activitylog-agent</pre>
+<p>Signing key: <a href="apt/activitylog.asc">apt/activitylog.asc</a></p>
+</body>
+</html>

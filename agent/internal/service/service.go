@@ -18,8 +18,12 @@ const Label = "net.ymotongpoo.activitylog.agent"
 // whose service is managed by `brew services`.
 var ErrHomebrew = errors.New("installed with Homebrew: run `brew services start activitylog-agent` instead")
 
+// ErrPackaged is returned by Install for a binary installed by the Debian
+// package, which ships the systemd user unit itself.
+var ErrPackaged = errors.New("installed from the package, which ships the user unit: run `systemctl --user enable --now activitylog-agent` instead")
+
 // executable returns the resolved path of the running binary. It refuses
-// Homebrew installs so that the agent is not registered twice.
+// Homebrew and package installs so that the agent is not registered twice.
 func executable() (string, error) {
 	exe, err := os.Executable()
 	if err != nil {
@@ -30,6 +34,9 @@ func executable() (string, error) {
 	}
 	if strings.Contains(exe, "/Cellar/") {
 		return "", ErrHomebrew
+	}
+	if exe == "/usr/bin/activitylog-agent" {
+		return "", ErrPackaged
 	}
 	return exe, nil
 }

@@ -18,7 +18,7 @@ macOS と Linux（GNOME）で動く常駐エージェントです。
 `doctor -send-test` はテスト用のログを 1 件送り、エンドポイントとトークンが正しいかを確かめます。
 `doctor -prompt` は、未許可の権限について OS の許可ダイアログを出させます。
 `service install` は設定を検査し、問題があれば登録しません（`-force` で無視できます）。
-Homebrew で入れたバイナリでは `service install` は何もせず、`brew services start activitylog-agent` を案内します（二重に登録しないため）。
+Homebrew や .deb で入れたバイナリでは `service install` は何もせず、`brew services` や `systemctl --user` を案内します（二重に登録しないため）。
 
 ## 設定
 
@@ -74,9 +74,13 @@ make build    # build/activitylog-agent
 make install  # ~/.local/bin に置いて service install する
 make release-macos VERSION=x.y.z   # darwin-arm64（Apple シリコン）の tar.gz
 make release-linux VERSION=x.y.z   # linux-amd64 と linux-arm64 の tar.gz
+make deb VERSION=x.y.z             # 上に加えて amd64 と arm64 の .deb（nfpm を go run で使う）
 ```
 
 `v*` のタグを push すると、GitHub Actions がリリースを作ります。
+リリースの後、apt リポジトリ（`.github/workflows/apt.yml`）を作り直して GitHub Pages に公開し、クリーンなコンテナで `apt install` できるかを確かめます。
+署名にはリポジトリのシークレット `APT_SIGNING_KEY`（ASCII armor の秘密鍵）を使います。
+
 リポジトリのシークレット `HOMEBREW_TAP_TOKEN`（`ymotongpoo/homebrew-macos` への contents と pull requests の書き込み権限を持つ fine-grained token）があれば、Formula を更新するプルリクエストも作ります。
 
 Linux 版は cgo を使わないので、macOS から `GOOS=linux go build ./cmd/activitylog-agent` でクロスビルドできます。

@@ -22,7 +22,7 @@ else
 sign = true
 endif
 
-.PHONY: build test vet install uninstall release-macos release-linux clean
+.PHONY: build test vet install uninstall release-macos release-linux deb clean
 
 build:
 	go build $(GOFLAGS_BUILD) -o $(BIN) ./cmd/activitylog-agent
@@ -65,6 +65,16 @@ release-linux:
 		CGO_ENABLED=0 GOOS=linux GOARCH=$$arch go build $(GOFLAGS_BUILD) -o $$dir/activitylog-agent ./cmd/activitylog-agent || exit 1; \
 		cp README.md ../LICENSE $$dir/; \
 		tar -C build -czf $(DIST)/activitylog-agent-$(VERSION)-linux-$$arch.tar.gz $$(basename $$dir); \
+	done
+
+# Debian packages built from the release-linux binaries. VERSION must start
+# with a digit.
+NFPM ?= go run github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.47.0
+deb: release-linux
+	mkdir -p build/deb
+	for arch in amd64 arm64; do \
+		cp build/activitylog-agent-$(VERSION)-linux-$$arch/activitylog-agent build/deb/activitylog-agent && \
+		ARCH=$$arch VERSION=$(VERSION) $(NFPM) package --config packaging/linux/nfpm.yaml --packager deb --target $(DIST)/ || exit 1; \
 	done
 
 clean:

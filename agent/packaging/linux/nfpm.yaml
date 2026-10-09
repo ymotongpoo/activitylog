@@ -1,0 +1,42 @@
+# nfpm configuration for the Debian package. Run from agent/ with ARCH and
+# VERSION set and the binary at build/deb/activitylog-agent; see `make deb`.
+name: activitylog-agent
+arch: ${ARCH}
+platform: linux
+version: ${VERSION}
+section: utils
+priority: optional
+maintainer: ymotongpoo <145104+ymotongpoo@users.noreply.github.com>
+description: |
+  Send desktop activity to an OTLP endpoint such as Grafana Cloud
+  Collects the foreground application, window title, AFK state, browser
+  tab, editor file and shell commands, like ActivityWatch, and exports them
+  as OTLP traces, metrics and logs. Includes the GNOME Shell extension,
+  the shell hooks and the Neovim plugin.
+vendor: ymotongpoo
+homepage: https://github.com/ymotongpoo/activitylog
+license: Apache-2.0
+suggests:
+  - gnome-shell
+contents:
+  - src: build/deb/activitylog-agent
+    dst: /usr/bin/activitylog-agent
+    file_info:
+      mode: 0755
+  - src: packaging/linux/activitylog-agent.service
+    dst: /usr/lib/systemd/user/activitylog-agent.service
+  - src: ../extensions/gnome-shell/activitylog@ymotongpoo.net
+    dst: /usr/share/gnome-shell/extensions/activitylog@ymotongpoo.net
+    type: tree
+  - src: ../extensions/shell/activitylog.zsh
+    dst: /usr/share/activitylog/shell/activitylog.zsh
+  - src: ../extensions/shell/activitylog.bash
+    dst: /usr/share/activitylog/shell/activitylog.bash
+  - src: ../extensions/nvim
+    dst: /usr/share/activitylog/nvim
+    type: tree
+  - src: ../LICENSE
+    dst: /usr/share/doc/activitylog-agent/copyright
+scripts:
+  postinstall: packaging/linux/postinst.sh
+  preremove: packaging/linux/prerm.sh

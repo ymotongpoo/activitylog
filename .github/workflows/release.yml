@@ -41,7 +41,7 @@ jobs:
           cache: npm
           cache-dependency-path: extensions/vscode/package-lock.json
       - run: make -C agent test
-      - run: make -C agent release-linux VERSION="${GITHUB_REF_NAME#v}"
+      - run: make -C agent deb VERSION="${GITHUB_REF_NAME#v}"
       - name: Package extensions
         run: |
           set -eu
@@ -77,6 +77,15 @@ jobs:
           sha256sum -- * > SHA256SUMS
           gh release create "$GITHUB_REF_NAME" \
             --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes ./*
+
+  apt:
+    needs: release
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/apt.yml
+    secrets: inherit
 
   # Opens a pull request that bumps the formula in ymotongpoo/homebrew-macos.
   # Requires a HOMEBREW_TAP_TOKEN secret: a fine-grained token with contents

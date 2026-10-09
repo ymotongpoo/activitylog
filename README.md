@@ -126,18 +126,31 @@ macOS はアドホック署名のバイナリをハッシュで識別するの�
 
 ## Linux（GNOME）
 
-[Releases](https://github.com/ymotongpoo/activitylog/releases) から `activitylog-agent-<version>-linux-<arch>.tar.gz` と `activitylog@ymotongpoo.net.shell-extension.zip` を取得します。
+Debian と Ubuntu 向けに、apt リポジトリ（amd64、arm64）を GitHub Pages で公開しています。
 
 ```sh
-gnome-extensions install activitylog@ymotongpoo.net.shell-extension.zip
-gnome-extensions enable activitylog@ymotongpoo.net   # Wayland では先にログアウトしてログインし直す
-
-tar xzf activitylog-agent-<version>-linux-amd64.tar.gz
-install -Dm755 activitylog-agent-<version>-linux-amd64/activitylog-agent ~/.local/bin/activitylog-agent
-activitylog-agent service install   # systemd のユーザーユニットを登録して起動する
+sudo curl -fsSL https://ymotongpoo.github.io/activitylog/apt/activitylog.gpg \
+  -o /usr/share/keyrings/activitylog.gpg
+echo "deb [signed-by=/usr/share/keyrings/activitylog.gpg] https://ymotongpoo.github.io/activitylog/apt stable main" \
+  | sudo tee /etc/apt/sources.list.d/activitylog.list
+sudo apt update
+sudo apt install activitylog-agent
 ```
 
+パッケージには、エージェント本体、systemd のユーザーユニット、GNOME Shell 拡張、シェルフック（`/usr/share/activitylog/shell/`）、Neovim プラグイン（`/usr/share/activitylog/nvim/`）が入っています。
+ユーザーユニットは全ユーザーで有効になるので、インストール後に一度ログアウトしてログインし直し、Shell 拡張を有効にします。
+
+```sh
+gnome-extensions enable activitylog@ymotongpoo.net
+systemctl --user restart activitylog-agent
+activitylog-agent doctor   # 拡張、アイドル検出、レシーバーへの疎通を確かめる
+```
+
+ログは `journalctl --user -u activitylog-agent -f` で読めます。
 設定ファイルは `~/.config/activitylog/config.yaml` です（`activitylog-agent example-config` で例を出力できます）。
+リポジトリの署名鍵のフィンガープリントは `E68A 9BD2 C770 AABE 0EE9 C753 9D51 85DC 1ADD 374F` です。
+
+apt を使わない場合は、[Releases](https://github.com/ymotongpoo/activitylog/releases) の `.deb` を `sudo apt install ./activitylog-agent_<version>_amd64.deb` で入れるか、tar.gz のバイナリを `~/.local/bin` に置いて `activitylog-agent service install` を実行します（Shell 拡張は `activitylog@ymotongpoo.net.shell-extension.zip` を `gnome-extensions install` で入れます）。
 ソースから入れる場合は `extensions/gnome-shell/install.sh` と `make -C agent install` を使います。
 
 GNOME の Wayland セッションでは、外部プロセスから前面ウィンドウを取得できません。

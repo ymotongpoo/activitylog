@@ -1,0 +1,89 @@
+name: apt
+
+# Publishes the apt repository on GitHub Pages from the .deb assets of the
+# most recent releases. Called by the release workflow; can also be run by
+# hand. Requires the APT_SIGNING_KEY secret (armored private key).
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  REPO_URL: https://ymotongpoo.github.io/activitylog/apt
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Install apt-utils
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq apt-utils
+      - name: Download packages from recent releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          pool=site/apt/pool/main/a/activitylog-agent
+          mkdir -p "$pool"
+          for tag in $(gh release list --repo "$GITHUB_REPOSITORY" --limit 5 --exclude-drafts --json tagName --jq '.[].tagName'); do
+            gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern '*.deb' --dir "$pool" || true
+          done
+          ls -l "$pool"
+          test -n "$(ls "$pool")"
+      - name: Build and sign the repository
+        env:
+          APT_SIGNING_KEY: ${{ secrets.APT_SIGNING_KEY }}
+        run: |
+          set -eu
+          sh agent/packaging/linux/build-apt-repo.sh site/apt
+          cp agent/packaging/linux/index.html site/index.html
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
+
+  # Installs the package from the published repository in a clean container.
+  verify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    container: ubuntu:24.04
+    steps:
+      - name: Install from the apt repository
+        run: |
+          set -eu
+          apt-get update -qq
+          apt-get install -y -qq ca-certificates curl >/dev/null
+          for i in 1 2 3 4 5 6; do
+            curl -fsSL "$REPO_URL/activitylog.gpg" -o /usr/share/keyrings/activitylog.gpg && break
+            sleep 20
+          done
+          echo "deb [signed-by=/usr/share/keyrings/activitylog.gpg] $REPO_URL stable main" \
+            > /etc/apt/sources.list.d/activitylog.list
+          for i in 1 2 3 4 5 6; do
+            apt-get update -qq && apt-cache policy activitylog-agent | grep -q Candidate && break
+            sleep 20
+          done
+          apt-get install -y activitylog-agent
+          activitylog-agent version
+          test -f /usr/lib/systemd/user/activitylog-agent.service
+          test -f /usr/share/gnome-shell/extensions/activitylog@ymotongpoo.net/metadata.json
