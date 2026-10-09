@@ -28,7 +28,34 @@ echo "sdk.dir=$HOME/Library/Android/sdk" > local.properties   # ANDROID_HOME を
 ```
 
 APK は `app/build/outputs/apk/debug/app-debug.apk` にできる。
-release ビルドには署名設定を入れていないので、普段使いでも debug ビルドでよい。
+
+## 署名付きの release ビルドと配布
+
+普段使いの端末には、自分の鍵で署名した release ビルドを Firebase App Distribution で配る。
+同じ鍵で署名し続けるかぎり、新しいバージョンは既存のインストールの上に更新として入る。
+
+```sh
+android/distribute.sh            # 最新のタグ（v0.5.0 なら 0.5.0）でビルドして配布する
+android/distribute.sh 0.5.1 "変更点のメモ"
+```
+
+`distribute.sh` は次のものを使う。
+
+| 項目 | デフォルト | 上書き |
+|---|---|---|
+| 署名鍵 | `~/.android/activitylog-release.jks`（エイリアス `activitylog`） | `ACTIVITYLOG_KEYSTORE`、`ACTIVITYLOG_KEY_ALIAS` |
+| 鍵のパスワード | macOS のキーチェーン項目 `net.ymotongpoo.activitylog.keystore`（アカウント `activitylog-release`） | `ACTIVITYLOG_KEYSTORE_PASSWORD` |
+| Firebase のアプリ ID と配布先グループ | `android/distribution.env`（コミットしない。`distribution.env.example` をコピーして作る） | 環境変数 `FIREBASE_APP_ID`、`FIREBASE_GROUPS` |
+
+Firebase CLI は、プロジェクトにアクセスできるアカウントでログインしておく（`firebase login`）。
+`versionCode` はバージョンから決まり、x.y.z は x×10000 + y×100 + z になる。
+更新として入れるには、前回より大きいバージョンを付ける。
+
+署名鍵をなくすと、既存のインストールを更新できず、アンインストールして入れ直すことになる（端末に溜まった未送信のデータも消える）。
+`~/.android/activitylog-release.jks` とキーチェーンのパスワードは、別の場所にもバックアップしておく。
+debug ビルドとは署名が違うので、debug ビルドを入れている端末では一度アンインストールしてから release ビルドを入れる。
+
+署名鍵の環境変数がなければ、release ビルドは署名なしで作られる（CI はこの状態でビルドを確かめている）。
 
 ## インストール
 

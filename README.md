@@ -199,7 +199,7 @@ source /path/to/activitylog/extensions/shell/activitylog.zsh
 
 [android/README.md](android/README.md) を参照してください。
 使用状況へのアクセスとユーザー補助（Chrome の URL 取得用）の許可が必要で、Play ストアには出さずサイドロードで使う前提です。
-APK は署名鍵を管理していないため Releases には置いておらず、手元でビルドしてインストールします。
+APK は Releases には置いていません。手元でビルドしてインストールするか、自分の鍵で署名して Firebase App Distribution で配ります（[android/README.md](android/README.md) の「署名付きの release ビルドと配布」）。
 
 ## 動作確認
 
