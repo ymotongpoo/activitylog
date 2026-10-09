@@ -30,6 +30,7 @@ import net.ymotongpoo.activitylog.settings.Permissions
 import net.ymotongpoo.activitylog.location.LocationCollector
 import net.ymotongpoo.activitylog.location.LocationLogs
 import net.ymotongpoo.activitylog.location.LocationQueue
+import net.ymotongpoo.activitylog.location.LocationService
 import net.ymotongpoo.activitylog.settings.SettingsStore
 import net.ymotongpoo.activitylog.settings.StatusStore
 import org.json.JSONException
@@ -79,7 +80,11 @@ class Pipeline(context: Context) {
         if (settings.locationEnabled) {
             val collector = LocationCollector(ctx)
             collector.registerPassive()
-            collector.currentFix(LOCATION_TIMEOUT_MS)?.let { locationQueue.append(it) }
+            LocationService.sync(ctx)
+            // With the minutely foreground service running, its fixes are enough.
+            if (!LocationService.running) {
+                collector.currentFix(LOCATION_TIMEOUT_MS)?.let { locationQueue.append(it) }
+            }
         }
         val fixes = locationQueue.beginDrain()
         val locationLogs = if (settings.locationEnabled) {

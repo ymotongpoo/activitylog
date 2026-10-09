@@ -55,6 +55,20 @@ data class LocationFix(
     }
 }
 
+/** How often the location is taken. */
+enum class LocationInterval(val id: String, val millis: Long) {
+    /** Every minute from a foreground service with a notification. */
+    MINUTE("1m", 60_000L),
+
+    /** Once per collection job (about every 15 minutes) plus passive updates; no notification. */
+    JOB("15m", 15 * 60_000L),
+    ;
+
+    companion object {
+        fun fromId(id: String?): LocationInterval = entries.firstOrNull { it.id == id } ?: MINUTE
+    }
+}
+
 /** How much the coordinates are rounded before they are sent. */
 enum class LocationPrecision(val id: String, val decimals: Int?) {
     FULL("full", null),

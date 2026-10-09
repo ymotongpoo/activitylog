@@ -141,6 +141,29 @@
 
         <TextView
             style="@style/FieldLabel"
+            android:text="@string/label_location_interval" />
+
+        <RadioGroup
+            android:id="@+id/location_interval"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/location_interval_minute"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/location_interval_minute" />
+
+            <RadioButton
+                android:id="@+id/location_interval_job"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/location_interval_job" />
+        </RadioGroup>
+
+        <TextView
+            style="@style/FieldLabel"
             android:text="@string/label_location_precision" />
 
         <RadioGroup

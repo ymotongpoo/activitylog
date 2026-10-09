@@ -39,6 +39,12 @@
     <string name="section_location">Location</string>
     <string name="label_location_enabled">Record location (device.location logs)</string>
     <string name="label_location_precision">Coordinate precision</string>
+    <string name="label_location_interval">Interval</string>
+    <string name="location_interval_minute">every minute (notification)</string>
+    <string name="location_interval_job">~15 min</string>
+    <string name="location_channel_name">Location recording</string>
+    <string name="location_notification_title">Recording location</string>
+    <string name="location_notification_text">activitylog takes the location every minute</string>
     <string name="location_precision_full">as reported</string>
     <string name="location_precision_100m">~100 m</string>
     <string name="location_precision_1km">~1 km</string>

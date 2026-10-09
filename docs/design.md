@@ -145,7 +145,7 @@ Mimir 側では `job="activitylog/activitylog-agent"`、`instance=<service.insta
 | `activity.app.switch` | 前面アプリの切り替え。`activity.app.from`、`activity.app.name`、`activity.app.id` |
 | `system.sleep` | スリープ検出（ポーリングの空白で判定）。`system.sleep.duration.seconds` |
 | `activity.device.screen` | Android の画面オン/オフ・ロック解除。`activity.device.screen.state` |
-| `device.location` | Android の位置（設定でオンにしたときだけ）。`geo.location.lat`、`geo.location.lon`、`activity.location.accuracy`（m）、`activity.location.altitude`、`activity.location.speed`、`activity.location.bearing`、`activity.location.provider`、`activity.location.source`（`periodic` / `passive`）、`activity.location.precision`。ログの時刻は測位時刻 |
+| `device.location` | Android の位置（設定でオンにしたときだけ）。`geo.location.lat`、`geo.location.lon`、`activity.location.accuracy`（m）、`activity.location.altitude`、`activity.location.speed`、`activity.location.bearing`、`activity.location.provider`、`activity.location.source`（`foreground` / `periodic` / `passive`）、`activity.location.precision`。ログの時刻は測位時刻 |
 | `agent.start` / `agent.stop` | エージェントの起動・停止 |
 | `agent.permission` | 権限の状態。`agent.permission.name`、`agent.permission.granted` |
 | `agent.diagnostic` | Warn 以上の内部ログ（送信失敗、AppleScript エラーなど） |
@@ -348,5 +348,5 @@ GNOME Shell 拡張が応答しないとき（設定 `platform: auto` のデフ�
 - `AccessibilityService` はブラウザ（Chrome、Chrome Beta、Brave、Edge など）のアドレスバーのテキストを読み、時刻と一緒にアプリ内のキューに追記する。定期ジョブは app スパンの区間に入る観測を `browser.tab` スパンにする。
 - カテゴリは `ApplicationInfo.category`（`game` / `audio` / `video` / `image` / `social` / `news` / `maps` / `productivity` / `accessibility`）から `Android/<category>` とする。
 - プライバシー設定は、除外パッケージ、除外ドメイン、URL の扱い（`full` / `path` / `domain` / `none`）。
-- 位置はデフォルトでは記録しない。設定でオンにすると、定期ジョブが毎回 LocationManager で現在地を 1 回取得し（Android 12 以降は fused プロバイダー）、加えてほかのアプリが要求した位置を passive プロバイダーで受け取る。どちらも `device.location` ログにする。定期ジョブで読むので「常に許可」の位置の権限が必要。座標は設定で小数点以下 3 桁（約 100 m）か 2 桁（約 1 km）に丸められる。スパンやメトリクスには位置を付けない。
+- 位置はデフォルトでは記録しない。設定でオンにすると、間隔が 1 分（デフォルト）なら location タイプのフォアグラウンドサービスが LocationManager で 1 分ごとに高精度の位置を要求し（Android 12 以降は fused プロバイダー、source `foreground`）、15 分なら定期ジョブが毎回現在地を 1 回取得する（source `periodic`）。どちらでも、ほかのアプリが要求した位置を passive プロバイダーで受け取る（source `passive`）。どちらも `device.location` ログにする。定期ジョブで読むので「常に許可」の位置の権限が必要。座標は設定で小数点以下 3 桁（約 100 m）か 2 桁（約 1 km）に丸められる。スパンやメトリクスには位置を付けない。
 - Play ストアには出さず、サイドロードで使う前提。

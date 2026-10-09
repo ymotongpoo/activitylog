@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.SharedPreferences
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
@@ -20,7 +21,9 @@ import androidx.core.view.WindowInsetsCompat
 import net.ymotongpoo.activitylog.R
 import net.ymotongpoo.activitylog.collect.UrlMode
 import net.ymotongpoo.activitylog.location.LocationCollector
+import net.ymotongpoo.activitylog.location.LocationInterval
 import net.ymotongpoo.activitylog.location.LocationPrecision
+import net.ymotongpoo.activitylog.location.LocationService
 import net.ymotongpoo.activitylog.otlp.DeviceInfo
 import net.ymotongpoo.activitylog.otlp.Spool
 import net.ymotongpoo.activitylog.settings.AppSettings
@@ -46,12 +49,18 @@ class MainActivity : Activity() {
     private lateinit var urlMode: RadioGroup
     private lateinit var locationEnabled: CheckBox
     private lateinit var locationPrecision: RadioGroup
+    private lateinit var locationInterval: RadioGroup
     private lateinit var permissionStatus: TextView
     private lateinit var status: TextView
     private lateinit var diagnostics: TextView
 
     // Kept as a field: SharedPreferences holds listeners weakly.
     private val statusListener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> refreshStatus() }
+
+    private val intervalIds = mapOf(
+        LocationInterval.MINUTE to R.id.location_interval_minute,
+        LocationInterval.JOB to R.id.location_interval_job,
+    )
 
     private val precisionIds = mapOf(
         LocationPrecision.FULL to R.id.location_precision_full,
@@ -88,6 +97,7 @@ class MainActivity : Activity() {
         urlMode = findViewById(R.id.url_mode)
         locationEnabled = findViewById(R.id.location_enabled)
         locationPrecision = findViewById(R.id.location_precision)
+        locationInterval = findViewById(R.id.location_interval)
         permissionStatus = findViewById(R.id.permission_status)
         status = findViewById(R.id.status)
         diagnostics = findViewById(R.id.diagnostics)
@@ -117,6 +127,7 @@ class MainActivity : Activity() {
             open(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:$packageName".toUri()))
         }
         findViewById<Button>(R.id.open_location).setOnClickListener { requestLocationPermission() }
+        locationInterval.setOnCheckedChangeListener { _, _ -> saveSettings() }
         locationEnabled.setOnCheckedChangeListener { _, checked ->
             saveSettings()
             if (checked && !Permissions.hasBackgroundLocation(this)) requestLocationPermission()
@@ -155,6 +166,7 @@ class MainActivity : Activity() {
         urlMode.check(urlModeIds.getValue(s.urlMode))
         locationEnabled.isChecked = s.locationEnabled
         locationPrecision.check(precisionIds.getValue(s.locationPrecision))
+        locationInterval.check(intervalIds.getValue(s.locationInterval))
         updateTokenHint()
     }
 
@@ -173,11 +185,15 @@ class MainActivity : Activity() {
                 locationEnabled = locationEnabled.isChecked,
                 locationPrecision = precisionIds.entries
                     .firstOrNull { it.value == locationPrecision.checkedRadioButtonId }?.key ?: LocationPrecision.FULL,
+                locationInterval = intervalIds.entries
+                    .firstOrNull { it.value == locationInterval.checkedRadioButtonId }?.key ?: LocationInterval.MINUTE,
             ),
             newToken,
         )
         val collector = LocationCollector(this)
         if (locationEnabled.isChecked) collector.registerPassive() else collector.unregisterPassive()
+        // The activity is in the foreground here, so the service may be started.
+        LocationService.sync(this)
         token.text.clear()
         updateTokenHint()
         refreshStatus()
@@ -209,7 +225,12 @@ class MainActivity : Activity() {
     private fun requestLocationPermission() {
         when {
             !Permissions.hasForegroundLocation(this) -> requestPermissions(
-                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
+                // The notification of the minutely location service needs POST_NOTIFICATIONS to be visible.
+                buildList {
+                    add(Manifest.permission.ACCESS_FINE_LOCATION)
+                    add(Manifest.permission.ACCESS_COARSE_LOCATION)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) add(Manifest.permission.POST_NOTIFICATIONS)
+                }.toTypedArray(),
                 REQUEST_LOCATION,
             )
             !Permissions.hasBackgroundLocation(this) -> requestPermissions(
@@ -232,6 +253,7 @@ class MainActivity : Activity() {
         }
         if (Permissions.hasBackgroundLocation(this) && locationEnabled.isChecked) {
             LocationCollector(this).registerPassive()
+            LocationService.sync(this)
         }
     }
 
