@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#F46800</color>
+    <!-- Clearly dimmer than entered text in both light and dark themes. -->
+    <color name="hint_text">#73808080</color>
 </resources>

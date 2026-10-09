@@ -79,12 +79,14 @@ class MainActivity : Activity() {
         diagnostics = findViewById(R.id.diagnostics)
 
         if (savedInstanceState == null) loadSettings()
+        validate()
 
         findViewById<Button>(R.id.save).setOnClickListener {
             saveSettings()
+            val complete = validate()
             // Send what was queued while the settings were missing.
-            Scheduler.runNow(this)
-            Toast.makeText(this, R.string.saved, Toast.LENGTH_SHORT).show()
+            if (complete) Scheduler.runNow(this)
+            Toast.makeText(this, if (complete) R.string.saved else R.string.saved_incomplete, Toast.LENGTH_SHORT).show()
         }
         findViewById<Button>(R.id.clear_token).setOnClickListener {
             settingsStore.clearToken()
@@ -102,6 +104,7 @@ class MainActivity : Activity() {
         }
         findViewById<Button>(R.id.send_now).setOnClickListener {
             saveSettings()
+            validate()
             Scheduler.runNow(this)
             Toast.makeText(this, R.string.send_requested, Toast.LENGTH_SHORT).show()
         }
@@ -154,6 +157,20 @@ class MainActivity : Activity() {
         refreshStatus()
     }
 
+    /** Marks missing or malformed export settings on their fields; returns true when all are set. */
+    private fun validate(): Boolean {
+        val s = settingsStore.load()
+        endpoint.error = when {
+            s.endpoint.isBlank() -> getString(R.string.error_required)
+            !s.endpoint.startsWith("https://") && !s.endpoint.startsWith("http://") ->
+                getString(R.string.error_endpoint_scheme)
+            else -> null
+        }
+        instanceId.error = if (s.instanceId.isBlank()) getString(R.string.error_required) else null
+        token.error = if (s.token.isBlank()) getString(R.string.error_required) else null
+        return endpoint.error == null && instanceId.error == null && token.error == null
+    }
+
     private fun updateTokenHint() {
         token.setHint(if (settingsStore.hasToken()) R.string.hint_token_saved else R.string.hint_token_empty)
     }
@@ -166,7 +183,7 @@ class MainActivity : Activity() {
             if (Permissions.hasUsageAccess(this)) yes else no,
             if (Permissions.isAccessibilityEnabled(this)) yes else no,
         )
-        deviceName.hint = DeviceInfo.defaultDeviceName(this)
+        deviceName.hint = getString(R.string.hint_device_name, DeviceInfo.defaultDeviceName(this))
     }
 
     private fun refreshStatus() {
