@@ -45,6 +45,8 @@ const (
 	ReasonIdle   = "idle"
 	ReasonLocked = "locked"
 	ReasonSleep  = "sleep"
+	// ReasonLoggedOut is used in terminal mode when no terminal is open.
+	ReasonLoggedOut = "logged_out"
 )
 
 type mode int
@@ -136,14 +138,20 @@ func (t *Tracker) Observe(s model.Sample, a *model.Activity) {
 		idle = 0
 	}
 	lastInput := now.Add(-idle)
-	away := s.Locked || idle >= t.opt.AFKTimeout
+	away := s.Locked || s.NoSession || idle >= t.opt.AFKTimeout
 	reason := ReasonIdle
-	if s.Locked {
+	switch {
+	case s.Locked:
 		reason = ReasonLocked
+	case s.NoSession:
+		reason = ReasonLoggedOut
 	}
 
 	switch t.mode {
 	case modeNone:
+		// Nothing before now is counted: the agent just started, the system
+		// slept or the state was unavailable.
+		t.credited = now
 		if away {
 			t.startAFK(now, reason, idle, nil)
 		} else {
@@ -273,6 +281,27 @@ func (t *Tracker) rollover(now time.Time) {
 	t.credit(now)
 	t.sink.EmitSpan(t.root.finish(now))
 	t.startAFK(now, t.reason, 0, link)
+}
+
+// Unavailable is called instead of Observe when the state cannot be read,
+// e.g. when the idle time is unknown. It closes all intervals at the last
+// good sample and counts nothing until the state can be read again.
+func (t *Tracker) Unavailable(now time.Time) {
+	last := t.last
+	if last.IsZero() {
+		last = now
+	}
+	switch t.mode {
+	case modeActive:
+		t.endActive(last)
+	case modeAFK:
+		t.credit(last)
+		t.sink.EmitSpan(t.root.finish(last))
+		t.root = nil
+	}
+	t.mode = modeNone
+	t.last = now
+	t.credited = now
 }
 
 // sleep closes everything at last and records the gap as AFK.
@@ -537,6 +566,7 @@ func contextAttrs(a *model.Activity) []otlp.KeyValue {
 			otlp.String("activity.terminal.shell", tm.Shell),
 			otlp.String("activity.terminal.cwd", tm.Cwd),
 			otlp.String("activity.terminal.program", tm.Program),
+			otlp.String("activity.terminal.tty", tm.TTY),
 		)
 	}
 	return nonEmpty(kvs...)

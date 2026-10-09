@@ -7,6 +7,11 @@
 # Shown as the "instance" label in Grafana. Defaults to the host name.
 # device_name: my-macbook
 
+# Linux only: how activity is read. auto (default) uses the GNOME Shell
+# extension while it answers and the terminals otherwise; gnome or terminal
+# forces one of them.
+# platform: auto
+
 otlp:
   # OTLP/HTTP endpoint without the /v1/<signal> suffix. The default is the
   # standard OTLP/HTTP receiver of a local Grafana Alloy or OpenTelemetry

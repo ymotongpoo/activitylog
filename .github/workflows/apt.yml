@@ -87,3 +87,6 @@ jobs:
           activitylog-agent version
           test -f /usr/lib/systemd/user/activitylog-agent.service
           test -f /usr/share/gnome-shell/extensions/activitylog@ymotongpoo.net/metadata.json
+          # Without a window system the agent falls back to terminal mode.
+          activitylog-agent doctor | tee doctor.txt || true
+          grep -q "mode: terminal" doctor.txt

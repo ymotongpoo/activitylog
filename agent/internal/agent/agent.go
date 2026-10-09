@@ -70,7 +70,7 @@ func Run(ctx context.Context, cfg *config.Config, version string, stderr *slog.L
 	if err != nil {
 		return fmt.Errorf("metrics exporter: %w", err)
 	}
-	plat, err := platform.New(log)
+	plat, err := platform.New(log, cfg.Platform)
 	if err != nil {
 		return err
 	}
@@ -99,7 +99,8 @@ func Run(ctx context.Context, cfg *config.Config, version string, stderr *slog.L
 
 	now := time.Now()
 	exp.EmitLog(otlp.LogRecord{Time: now, Severity: otlp.SeverityInfo, EventName: "agent.start",
-		Body: "activitylog-agent " + version + " started"})
+		Body:       "activitylog-agent " + version + " started in " + plat.Mode() + " mode",
+		Attributes: []otlp.KeyValue{otlp.String("agent.mode", plat.Mode())}})
 	for _, p := range plat.Permissions(true) {
 		sev := otlp.SeverityInfo
 		if !p.Granted {
@@ -122,7 +123,7 @@ func Run(ctx context.Context, cfg *config.Config, version string, stderr *slog.L
 		}()
 	}
 
-	log.Info("agent running", "endpoint", cfg.OTLP.Endpoint, "device", cfg.DeviceName, "ingest", cfg.Ingest.Listen)
+	log.Info("agent running", "mode", plat.Mode(), "endpoint", cfg.OTLP.Endpoint, "device", cfg.DeviceName, "ingest", cfg.Ingest.Listen)
 	poll := time.NewTicker(cfg.PollInterval.D())
 	defer poll.Stop()
 	cp := time.NewTicker(checkpointInterval)
@@ -142,6 +143,10 @@ loop:
 					log.Warn("incomplete sample", "err", err)
 					lastErr, lastErrAt = msg, time.Now()
 				}
+			}
+			if s.IdleUnknown {
+				tr.Unavailable(s.Time)
+				continue
 			}
 			tr.Observe(s, resolver.Resolve(s.Window, s.Time))
 		case ev := <-commands:

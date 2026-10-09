@@ -61,13 +61,14 @@ func runDoctor(cfgPath string, send, prompt bool) int {
 	info("instance_id set: %t, device name: %s, data dir: %s", cfg.OTLP.InstanceID != "", cfg.DeviceName, cfg.DataDir)
 
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
-	plat, err := platform.New(log)
+	plat, err := platform.New(log, cfg.Platform)
 	check(err == nil, "platform")
 	if err != nil {
 		info("%v", err)
 		return 1
 	}
 	defer plat.Close()
+	info("mode: %s", plat.Mode())
 	for _, p := range plat.Permissions(prompt) {
 		check(p.Granted, "permission: %s", p.Name)
 		if p.Detail != "" {
@@ -82,7 +83,11 @@ func runDoctor(cfgPath string, send, prompt bool) int {
 	}
 	info("app: %q id: %q pid: %d", s.Window.AppName, s.Window.AppID, s.Window.PID)
 	info("title: %q", s.Window.Title)
-	info("idle: %s locked: %t idle inhibited: %t", s.Idle.Round(time.Second), s.Locked, s.Inhibited)
+	if s.Window.TTY != "" {
+		info("terminal: %s cwd: %q", s.Window.TTY, s.Window.Cwd)
+	}
+	info("idle: %s locked: %t idle inhibited: %t no session: %t idle unknown: %t",
+		s.Idle.Round(time.Second), s.Locked, s.Inhibited, s.NoSession, s.IdleUnknown)
 	if tab, err := plat.BrowserTab(s.Window); tab != nil || err != nil {
 		check(err == nil, "browser tab via AppleScript (%s)", resolve.BrowserName(s.Window.AppID))
 		if err != nil {

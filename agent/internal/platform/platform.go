@@ -22,6 +22,9 @@ type Platform interface {
 	// set, the OS may show a permission dialog.
 	Permissions(prompt bool) []Permission
 
+	// Mode names how activity is read, e.g. "macos", "gnome" or "terminal".
+	Mode() string
+
 	Close()
 }
 

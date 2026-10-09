@@ -79,7 +79,8 @@ type darwin struct {
 }
 
 // New returns the macOS platform.
-func New(log *slog.Logger) (Platform, error) {
+// The mode is ignored on macOS.
+func New(log *slog.Logger, _ string) (Platform, error) {
 	return &darwin{log: log, backoff: map[string]time.Time{}, denied: map[string]bool{}}, nil
 }
 
@@ -176,5 +177,7 @@ func (d *darwin) Permissions(prompt bool) []Permission {
 	}
 	return []Permission{perm}
 }
+
+func (d *darwin) Mode() string { return "macos" }
 
 func (d *darwin) Close() {}

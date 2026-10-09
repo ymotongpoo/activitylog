@@ -18,6 +18,7 @@ const (
 	SourceExtension   = "extension"
 	SourceAppleScript = "applescript"
 	SourceShell       = "shell"
+	SourceProc        = "proc"
 )
 
 // Window is the focused window as reported by the platform.
@@ -26,6 +27,12 @@ type Window struct {
 	AppID   string // bundle ID (macOS), desktop ID or WM_CLASS (Linux)
 	PID     int
 	Title   string
+
+	// In terminal mode the "window" is the terminal with the most recent
+	// input: TTY is its name (e.g. "pts/3"), the application is its
+	// foreground process and Cwd is that process' working directory.
+	TTY string
+	Cwd string
 }
 
 // Empty reports whether no window is focused.
@@ -38,6 +45,12 @@ type Sample struct {
 	Locked    bool
 	Inhibited bool // an idle inhibitor (video playback, meeting) is active
 	Window    Window
+
+	// NoSession is set in terminal mode when the user has no terminal.
+	NoSession bool
+	// IdleUnknown is set when the idle time could not be read. Such samples
+	// must not be counted as active time.
+	IdleUnknown bool
 }
 
 // BrowserInfo describes the active tab of a browser.
@@ -65,6 +78,7 @@ type TerminalInfo struct {
 	Shell   string
 	Cwd     string
 	Program string
+	TTY     string
 }
 
 // Activity is a resolved and filtered view of what the user is doing.

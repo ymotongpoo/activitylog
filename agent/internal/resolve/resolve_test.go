@@ -105,3 +105,28 @@ func TestBrowserName(t *testing.T) {
 		}
 	}
 }
+
+func TestTerminalMode(t *testing.T) {
+	r, store := newResolver(t, nil)
+	now := time.Now()
+	w := model.Window{AppName: "htop", AppID: "htop", PID: 500, TTY: "pts/1", Cwd: "/srv"}
+
+	a := r.Resolve(w, now)
+	if a.Kind != model.KindTerminal || a.Source != model.SourceProc || a.Terminal.Cwd != "/srv" || a.Terminal.TTY != "pts/1" {
+		t.Errorf("htop = %+v %+v", a, a.Terminal)
+	}
+
+	store.PutTerminal(ingest.TerminalEvent{Event: "cwd", PID: 400, Shell: "zsh", TTY: "/dev/pts/1", Cwd: "/home/me", Time: now})
+	a = r.Resolve(model.Window{AppName: "zsh", AppID: "zsh", PID: 400, TTY: "pts/1"}, now)
+	if a.Terminal.Shell != "zsh" || a.Terminal.Cwd != "/home/me" {
+		t.Errorf("zsh = %+v", a.Terminal)
+	}
+
+	// Neovim is matched by PID even if it does not track terminal focus.
+	store.PutEditor(ingest.EditorReport{Editor: "neovim", Instance: "600", PID: 600, Event: "open", Focused: false,
+		ProjectPath: "/srv/app", File: "/srv/app/main.go", Language: "go", Time: now})
+	a = r.Resolve(model.Window{AppName: "nvim", AppID: "nvim", PID: 600, TTY: "pts/1", Cwd: "/srv/app"}, now)
+	if a.Kind != model.KindEditor || a.Editor.File != "/srv/app/main.go" || a.Editor.Project != "app" {
+		t.Errorf("nvim = %+v %+v", a, a.Editor)
+	}
+}

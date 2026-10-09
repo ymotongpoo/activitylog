@@ -9,11 +9,11 @@ import (
 
 const unitName = "activitylog-agent.service"
 
+// The unit is wanted by default.target so that it also starts on machines
+// without a graphical session, e.g. servers used over SSH.
 const unitTemplate = `[Unit]
-Description=activitylog agent (desktop activity to OTLP)
+Description=activitylog agent (desktop and terminal activity to OTLP)
 Documentation=https://github.com/ymotongpoo/activitylog
-PartOf=graphical-session.target
-After=graphical-session.target
 
 [Service]
 ExecStart=%s run
@@ -21,7 +21,7 @@ Restart=on-failure
 RestartSec=10
 
 [Install]
-WantedBy=graphical-session.target
+WantedBy=default.target
 `
 
 func unitPath() string {

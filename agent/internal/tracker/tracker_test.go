@@ -395,3 +395,40 @@ func TestTerminalEndBeforeStart(t *testing.T) {
 }
 
 const commandMaxAgeForTest = 24 * time.Hour
+
+func TestNoSessionIsAFK(t *testing.T) {
+	h := newHarness(t)
+	h.run(0, 10, app("nvim", "nvim (pts/0)"), true)
+	h.tr.Observe(model.Sample{Time: at(11), NoSession: true}, nil)
+	if h.tr.mode != modeAFK || h.tr.reason != ReasonLoggedOut {
+		t.Fatalf("mode=%v reason=%v", h.tr.mode, h.tr.reason)
+	}
+	h.tr.Shutdown(at(20))
+	afk := h.sink.named(StateAFK)
+	if len(afk) != 1 || attr(afk[0], "activity.afk.reason") != ReasonLoggedOut {
+		t.Errorf("afk spans = %+v", afk)
+	}
+}
+
+func TestUnavailableCountsNothing(t *testing.T) {
+	h := newHarness(t)
+	a := app("Chrome", "Docs")
+	h.run(0, 10, a, true)
+	for s := 11; s <= 100; s++ {
+		h.tr.Unavailable(at(s))
+	}
+	h.lastInput = at(101)
+	h.run(101, 110, a, true)
+	h.tr.Shutdown(at(110))
+
+	actives := h.sink.named(StateActive)
+	if len(actives) != 2 || !actives[0].End.Equal(at(10)) || !actives[1].Start.Equal(at(101)) {
+		t.Fatalf("active spans = %+v", actives)
+	}
+	if got := h.meter.state[StateActive]; got != 19*time.Second {
+		t.Errorf("active = %v, want 19s", got)
+	}
+	if h.meter.state[StateAFK] != 0 || len(h.sink.events("system.sleep")) != 0 {
+		t.Error("unavailable time recorded as AFK or sleep")
+	}
+}

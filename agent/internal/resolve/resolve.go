@@ -84,6 +84,11 @@ func (r *Resolver) Resolve(w model.Window, now time.Time) *model.Activity {
 		AppName: w.AppName, AppID: w.AppID, PID: w.PID, Title: w.Title,
 		Kind: model.KindWindow, Source: model.SourceTitle,
 	}
+	if w.TTY != "" {
+		r.terminalMode(a, w, now)
+		r.rules.Apply(a)
+		return a
+	}
 	id := strings.ToLower(w.AppID)
 	switch {
 	case r.browsers[id]:
@@ -131,6 +136,29 @@ func (r *Resolver) terminal(a *model.Activity, now time.Time) {
 		a.Kind, a.Source = model.KindTerminal, model.SourceShell
 		a.Terminal = &model.TerminalInfo{Shell: sh.Shell, Cwd: sh.Cwd, Program: sh.Program}
 	}
+}
+
+var shells = map[string]bool{"bash": true, "zsh": true, "fish": true, "sh": true, "dash": true, "ksh": true, "nu": true}
+
+// terminalMode resolves the foreground process of a terminal (terminal
+// mode). An editor that reports its PID gives the file; otherwise the
+// context is the working directory of the foreground process.
+func (r *Resolver) terminalMode(a *model.Activity, w model.Window, now time.Time) {
+	if rep, ok := r.store.EditorByPID(now, ReportTTL, w.PID); ok {
+		setEditor(a, rep)
+		return
+	}
+	a.Kind, a.Source = model.KindTerminal, model.SourceProc
+	t := &model.TerminalInfo{Cwd: w.Cwd, TTY: w.TTY}
+	if sh, ok := r.store.ShellOnTTY(w.TTY); ok {
+		t.Shell, t.Program = sh.Shell, sh.Program
+		if t.Cwd == "" {
+			t.Cwd = sh.Cwd
+		}
+	} else if shells[w.AppName] {
+		t.Shell = w.AppName
+	}
+	a.Terminal = t
 }
 
 func setEditor(a *model.Activity, rep ingest.EditorReport) {

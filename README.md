@@ -1,6 +1,6 @@
 # activitylog
 
-[ActivityWatch](https://activitywatch.net/) と同種のアクティビティを macOS、Linux（GNOME）、Android で収集し、OTLP で Grafana Cloud に送るアプリ一式です。
+[ActivityWatch](https://activitywatch.net/) と同種のアクティビティを macOS、Linux（GNOME のデスクトップと、ウィンドウシステムのないサーバー）、Android で収集し、OTLP で Grafana Cloud に送るアプリ一式です。
 GUI は持たず、可視化は Grafana で行います。
 
 収集するのは次のデータです。
@@ -124,7 +124,7 @@ macOS はアドホック署名のバイナリをハッシュで識別するの�
 ソースから入れる場合は、`make -C agent install` で `~/.local/bin` に置いて LaunchAgent を登録します。
 キーチェーンにコード署名用の証明書を作り、`make -C agent install SIGN_IDENTITY="証明書名"` とすると、許可が再ビルド後も残ります。
 
-## Linux（GNOME）
+## Linux
 
 Debian と Ubuntu 向けに、apt リポジトリ（amd64、arm64）を GitHub Pages で公開しています。
 
@@ -135,27 +135,54 @@ echo "deb [signed-by=/usr/share/keyrings/activitylog.gpg] https://ymotongpoo.git
   | sudo tee /etc/apt/sources.list.d/activitylog.list
 sudo apt update
 sudo apt install activitylog-agent
+
+systemctl --user enable --now activitylog-agent   # 記録したいユーザーごとに一度だけ
+activitylog-agent doctor                          # 動作モード、取得できる項目、レシーバーへの疎通を確かめる
 ```
 
 パッケージには、エージェント本体、systemd のユーザーユニット、GNOME Shell 拡張、シェルフック（`/usr/share/activitylog/shell/`）、Neovim プラグイン（`/usr/share/activitylog/nvim/`）が入っています。
-ユーザーユニットは全ユーザーで有効になるので、インストール後に一度ログアウトしてログインし直し、Shell 拡張を有効にします。
+ユーザーユニットは、ユーザーが自分で有効にするまで動きません。
+共有のマシンに入れても、他のユーザーの操作は記録されません。
 
-```sh
-gnome-extensions enable activitylog@ymotongpoo.net
-systemctl --user restart activitylog-agent
-activitylog-agent doctor   # 拡張、アイドル検出、レシーバーへの疎通を確かめる
-```
-
+エージェントは、GNOME Shell 拡張が応答すればデスクトップのモード（`gnome`）で、応答しなければ端末のモード（`terminal`）で動きます。
+どちらで動いているかは `activitylog-agent doctor` の `mode:` で確かめられます。
 ログは `journalctl --user -u activitylog-agent -f` で読めます。
 設定ファイルは `~/.config/activitylog/config.yaml` です（`activitylog-agent example-config` で例を出力できます）。
 リポジトリの署名鍵のフィンガープリントは `E68A 9BD2 C770 AABE 0EE9 C753 9D51 85DC 1ADD 374F` です。
 
-apt を使わない場合は、[Releases](https://github.com/ymotongpoo/activitylog/releases) の `.deb` を `sudo apt install ./activitylog-agent_<version>_amd64.deb` で入れるか、tar.gz のバイナリを `~/.local/bin` に置いて `activitylog-agent service install` を実行します（Shell 拡張は `activitylog@ymotongpoo.net.shell-extension.zip` を `gnome-extensions install` で入れます）。
-ソースから入れる場合は `extensions/gnome-shell/install.sh` と `make -C agent install` を使います。
+### GNOME のデスクトップ
 
 GNOME の Wayland セッションでは、外部プロセスから前面ウィンドウを取得できません。
 そのため Shell 拡張が前面ウィンドウを D-Bus で公開し、エージェントがそれを 1 秒ごとに読みます。
+インストール後に一度ログアウトしてログインし直し、Shell 拡張を有効にしてください。
+
+```sh
+gnome-extensions enable activitylog@ymotongpoo.net
+systemctl --user restart activitylog-agent
+```
+
 URL はウィンドウタイトルに含まれないので、Linux でタブの URL を取るにはブラウザ拡張が必要です。
+
+### ウィンドウシステムのないサーバー
+
+Ubuntu Server のように SSH や tty で使うマシンでは、ウィンドウの代わりに端末を記録します。
+
+| 記録する内容 | 取り方 |
+|---|---|
+| アプリ | 直近に入力があった端末で、前面で動いているコマンド（`nvim`、`htop`、`zsh` など） |
+| 文脈 | そのコマンドの作業ディレクトリと端末名（`activity.terminal.cwd`、`activity.terminal.tty`）。Neovim ではファイルとプロジェクト |
+| アイドル時間 | 自分の端末すべてで、最後に入力があってからの時間（`w` コマンドの IDLE と同じ） |
+| AFK | アイドル時間が `afk.timeout` を超えたとき。端末が一つもないときは reason `logged_out` |
+
+tmux や screen の中で作業していても、入力のあったペインの端末を記録します。
+ユーザーの systemd はログインしている間だけ動くので、エージェントも SSH でログインしている間だけ動きます。
+ログアウト中も動かし続けるなら `loginctl enable-linger` を使います。
+コマンドの開始と終了、シェルのカレントディレクトリも記録するなら、`~/.zshrc` か `~/.bashrc` で `/usr/share/activitylog/shell/` のフックを読み込みます。
+
+### apt を使わない場合
+
+[Releases](https://github.com/ymotongpoo/activitylog/releases) の `.deb` を `sudo apt install ./activitylog-agent_<version>_amd64.deb` で入れるか、tar.gz のバイナリを `~/.local/bin` に置いて `activitylog-agent service install` を実行します（GNOME の Shell 拡張は `activitylog@ymotongpoo.net.shell-extension.zip` を `gnome-extensions install` で入れます）。
+ソースから入れる場合は `extensions/gnome-shell/install.sh` と `make -C agent install` を使います。
 
 ## 拡張機能とフック
 

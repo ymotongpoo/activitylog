@@ -70,14 +70,14 @@ trace (1 セッション)
 | 属性 | 型 | 説明 |
 |---|---|---|
 | `activity.state` | string | `active` / `afk`（root） |
-| `activity.afk.reason` | string | `idle` / `locked` / `sleep`（afk root） |
+| `activity.afk.reason` | string | `idle` / `locked` / `sleep` / `logged_out`（afk root） |
 | `activity.app.switches` | int | root の間に前面アプリが切り替わった回数（root の終了時に付与） |
 | `activity.app.name` | string | アプリの表示名 |
 | `activity.app.id` | string | macOS は bundle ID、Linux は desktop ID（`.desktop` を除く）または WM_CLASS、Android はパッケージ名 |
 | `process.pid` | int | 前面アプリの PID（デスクトップ） |
 | `activity.window.title` | string | ウィンドウタイトル（プライバシールールで伏せ字になることがある） |
 | `activity.context.kind` | string | `browser.tab` / `editor.file` / `terminal` / `window` |
-| `activity.context.source` | string | 文脈情報の取得元。`extension` / `applescript` / `accessibility` / `shell` / `title` |
+| `activity.context.source` | string | 文脈情報の取得元。`extension` / `applescript` / `accessibility` / `shell` / `proc` / `title` |
 | `activity.category` | string | 分類ルールで決まったカテゴリ。例 `Work/Programming`。未分類は `Uncategorized` |
 
 `browser.tab`
@@ -110,6 +110,7 @@ trace (1 セッション)
 | `activity.terminal.shell` | `zsh` / `bash` |
 | `activity.terminal.cwd` | カレントディレクトリ |
 | `activity.terminal.program` | `$TERM_PROGRAM` |
+| `activity.terminal.tty` | 端末名（端末モード）。例 `pts/3` |
 | `process.parent_pid` | シェルの PID（`terminal.command`） |
 | `process.command` | コマンド。既定はコマンド名のみ（`terminal.command`） |
 | `activity.terminal.command.name` | コマンドの先頭語（`terminal.command`） |
@@ -309,11 +310,23 @@ GNOME Wayland では外部プロセスから前面ウィンドウを取れない
 アイドル時間は `org.gnome.Mutter.IdleMonitor`（`/org/gnome/Mutter/IdleMonitor/Core` の `GetIdletime`、ミリ秒）、
 画面ロックは `org.gnome.ScreenSaver`（`/org/gnome/ScreenSaver` の `GetActive`）から、エージェントが直接取得する。
 
+## Linux の端末モード
+
+ウィンドウシステムのないマシン（SSH で使うサーバーなど）では、ウィンドウの代わりに端末を観測する。
+GNOME Shell 拡張が応答しないとき（設定 `platform: auto` のデフォルト）、または `platform: terminal` のときにこのモードになる。
+
+- ユーザーが所有する `/dev/pts/*` と `/dev/tty*` を列挙し、最終アクセス時刻（入力があると更新される。粒度は 8 秒程度）が最も新しいものを作業中の端末とする。ほぼ同時に入力がある端末が複数あれば、前面プロセスが tmux や screen でないもの（ペイン）を選ぶ。
+- アイドル時間は、端末の最終アクセス時刻のうち最も新しいものからの経過時間。
+- その端末の前面プロセスグループのリーダー（`/proc/<pid>/stat` の `tpgid`）をアプリとする。`activity.app.name` と `activity.app.id` はコマンド名、`activity.window.title` は「コマンド名 (端末名)」。
+- context は `terminal`（source `proc`）で、作業ディレクトリ（`/proc/<pid>/cwd`）と端末名を `activity.terminal.cwd`、`activity.terminal.tty` に入れる。同じ端末のシェルフックの報告があればシェル名も入れる。前面プロセスが Neovim で、同じ PID の報告があれば `editor.file` にする。
+- 端末が一つもなければ AFK とし、reason は `logged_out`。
+
 ## AFK とスリープの判定
 
 - 1 秒ごとにアイドル時間（最後の入力からの経過）とロック状態を取る。
 - アイドル時間が `afk_timeout`（既定 3 分）を超えたら、最後の入力時刻にさかのぼって active を閉じ、afk を始める。
 - ロック中は即座に afk にする（reason `locked`）。
+- アイドル時間が読めないサンプルでは、開いている区間を直前のサンプル時刻で閉じ、読めるようになるまでスパンもメトリクスも作らない。
 - ポーリングの間隔が 30 秒を超えて空いたらスリープとみなし、直前のポーリング時刻ですべての区間を閉じ、空白を afk（reason `sleep`）にする。
 - `afk.respect_idle_inhibitors`（既定 false）を有効にすると、動画再生や会議アプリがアイドル抑止を掛けている間はアイドル時間を 0 とみなす。macOS は IOKit の `PreventUserIdleDisplaySleep` アサーション、GNOME は `org.gnome.SessionManager.IsInhibited(8)` を見る。
 

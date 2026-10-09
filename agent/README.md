@@ -37,7 +37,8 @@ Homebrew や .deb で入れたバイナリでは `service install` は何もせ�
 |---|---|---|---|
 | macOS | アクセシビリティ | ウィンドウタイトル | アプリ名だけを記録する |
 | macOS | オートメーション（ブラウザごと） | 拡張がないときのタブの URL | ウィンドウタイトルだけを記録する |
-| Linux | GNOME Shell 拡張 `activitylog@ymotongpoo.net` | 前面ウィンドウ | アプリを記録できない |
+| Linux（gnome） | GNOME Shell 拡張 `activitylog@ymotongpoo.net` | 前面ウィンドウ | 拡張が応答しなければ terminal モードになる |
+| Linux（terminal） | なし（自分の端末デバイスと `/proc` を読むだけ） | 前面のコマンド、アイドル時間 | 端末がなければ AFK（`logged_out`） |
 
 macOS の許可は `activitylog-agent` バイナリに対して与えます。
 バイナリには Info.plist（バンドル ID `net.ymotongpoo.activitylog.agent` とオートメーションの利用目的）を埋め込んであり、`make` は署名し直してそれを署名に結び付けます。
@@ -54,6 +55,10 @@ macOS では `~/Library/Application Support/activitylog/`、Linux では `~/.loc
 Warn 以上のログは `agent.diagnostic` イベントとして Loki にも送ります。
 
 ## 実装上の注意
+
+Linux では、起動時と 10 秒ごとに GNOME Shell 拡張の応答を確かめ、応答すれば `gnome`、しなければ `terminal` のモードで動きます（設定 `platform` で固定できます）。
+`terminal` モードでは、自分が所有する `/dev/pts/*` と `/dev/tty*` のうち最終アクセス時刻が新しいものを作業中の端末とみなし、その前面プロセスグループのリーダーをアプリとして記録します。
+アイドル時間が読めないサンプルでは、それまでの区間を最後に読めた時刻で閉じ、読めるようになるまで時間を数えません。
 
 AFK の判定では、最後の入力から `afk.timeout` が経った時点で、最後の入力時刻までさかのぼって active を閉じます。
 最後の入力から現在までの時間は、戻ってくるか AFK と決まるまで、どちらのメトリクスにも加算しません。

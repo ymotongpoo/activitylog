@@ -34,6 +34,9 @@ func (d Duration) D() time.Duration { return time.Duration(d) }
 type Config struct {
 	DeviceName string `yaml:"device_name"`
 	DataDir    string `yaml:"data_dir"`
+	// Platform selects how activity is read on Linux: auto (default),
+	// gnome or terminal. It is ignored on macOS.
+	Platform string `yaml:"platform"`
 
 	OTLP struct {
 		Endpoint   string            `yaml:"endpoint"`
@@ -210,6 +213,11 @@ func (c *Config) Validate() error {
 	}
 	if _, err := c.Token(); err != nil {
 		errs = append(errs, err)
+	}
+	switch c.Platform {
+	case "", "auto", "gnome", "terminal":
+	default:
+		errs = append(errs, fmt.Errorf("platform: unknown mode %q (want auto, gnome or terminal)", c.Platform))
 	}
 	switch c.Privacy.TerminalCommand {
 	case "full", "name", "none":

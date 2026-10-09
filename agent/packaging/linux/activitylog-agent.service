@@ -1,8 +1,6 @@
 [Unit]
-Description=activitylog agent (desktop activity to OTLP)
+Description=activitylog agent (desktop and terminal activity to OTLP)
 Documentation=https://github.com/ymotongpoo/activitylog
-PartOf=graphical-session.target
-After=graphical-session.target
 
 [Service]
 ExecStart=/usr/bin/activitylog-agent run
@@ -10,4 +8,4 @@ Restart=on-failure
 RestartSec=10
 
 [Install]
-WantedBy=graphical-session.target
+WantedBy=default.target

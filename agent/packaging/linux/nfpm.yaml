@@ -39,4 +39,3 @@ contents:
     dst: /usr/share/doc/activitylog-agent/copyright
 scripts:
   postinstall: packaging/linux/postinst.sh
-  preremove: packaging/linux/prerm.sh

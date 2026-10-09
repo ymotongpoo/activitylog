@@ -3,6 +3,7 @@
 package ingest
 
 import (
+	"strings"
 	"sync"
 	"time"
 )
@@ -154,6 +155,43 @@ func (s *Store) FocusedEditor(now time.Time, ttl time.Duration, accept func(edit
 		}
 		if !found || r.Time.After(best.Time) {
 			best, found = r, true
+		}
+	}
+	return best, found
+}
+
+// EditorByPID returns the most recent report within ttl of now from the
+// editor process pid (Neovim reports its PID).
+func (s *Store) EditorByPID(now time.Time, ttl time.Duration, pid int) (EditorReport, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var best EditorReport
+	found := false
+	for _, r := range s.editors {
+		if pid == 0 || r.PID != pid || now.Sub(r.Time) > ttl {
+			continue
+		}
+		if !found || r.Time.After(best.Time) {
+			best, found = r, true
+		}
+	}
+	return best, found
+}
+
+// ShellOnTTY returns the most recent shell on the terminal tty, given
+// either as "pts/3" or "/dev/pts/3".
+func (s *Store) ShellOnTTY(tty string) (Shell, bool) {
+	tty = strings.TrimPrefix(tty, "/dev/")
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var best Shell
+	found := false
+	for _, sh := range s.shells {
+		if tty == "" || strings.TrimPrefix(sh.TTY, "/dev/") != tty {
+			continue
+		}
+		if !found || sh.Time.After(best.Time) {
+			best, found = sh, true
 		}
 	}
 	return best, found
