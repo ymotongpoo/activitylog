@@ -15,7 +15,14 @@ data class AppSettings(
     val urlMode: UrlMode,
 ) {
     val isExportConfigured: Boolean
-        get() = endpoint.isNotBlank() && instanceId.isNotBlank() && token.isNotBlank()
+        get() = missingExportSettings().isEmpty()
+
+    /** Names of the export settings that are not set yet. */
+    fun missingExportSettings(): List<String> = buildList {
+        if (endpoint.isBlank()) add("endpoint")
+        if (instanceId.isBlank()) add("instance ID")
+        if (token.isBlank()) add("token")
+    }
 
     fun privacyPolicy(): PrivacyPolicy = PrivacyPolicy(
         excludedPackages = PrivacyPolicy.parseList(excludedPackages),
@@ -39,6 +46,10 @@ class SettingsStore(context: Context) {
     )
 
     fun hasToken(): Boolean = prefs.contains(KEY_TOKEN)
+
+    /** True when a token is stored but cannot be decrypted, e.g. after the keystore key was lost. */
+    fun tokenUnreadable(): Boolean =
+        prefs.getString(KEY_TOKEN, null)?.let { TokenCipher.decrypt(it) == null } ?: false
 
     /** Saves everything except the token; pass a non-null [newToken] to replace it. */
     fun save(settings: AppSettings, newToken: String?) {

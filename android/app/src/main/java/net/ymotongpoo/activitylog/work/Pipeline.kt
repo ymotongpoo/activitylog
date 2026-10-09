@@ -193,7 +193,13 @@ class Pipeline(context: Context) {
         val nowMs = System.currentTimeMillis()
         if (!settings.isExportConfigured) {
             val r = FlushResult(0, 0, spool.count(), retryable = false, lastError = "not configured")
-            status.recordSend(nowMs, "Not sent: endpoint, instance ID or token missing (${r.remaining} queued)")
+            val missing = settings.missingExportSettings().joinToString(", ")
+            val hint = if (settingsStore.tokenUnreadable()) {
+                "; the saved token cannot be decrypted, enter it again"
+            } else {
+                ""
+            }
+            status.recordSend(nowMs, "Not sent: $missing not set$hint (${r.remaining} queued)")
             return r
         }
         val sender = OtlpSender(settings.endpoint, settings.instanceId, settings.token)

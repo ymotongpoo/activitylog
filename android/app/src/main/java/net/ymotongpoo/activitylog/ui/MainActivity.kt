@@ -82,6 +82,8 @@ class MainActivity : Activity() {
 
         findViewById<Button>(R.id.save).setOnClickListener {
             saveSettings()
+            // Send what was queued while the settings were missing.
+            Scheduler.runNow(this)
             Toast.makeText(this, R.string.saved, Toast.LENGTH_SHORT).show()
         }
         findViewById<Button>(R.id.clear_token).setOnClickListener {
@@ -113,6 +115,10 @@ class MainActivity : Activity() {
     }
 
     override fun onPause() {
+        // Opening the system settings to grant a permission can kill this
+        // process; save what was typed so that it is not only kept in the
+        // restored view state.
+        saveSettings()
         statusStore.prefs.unregisterOnSharedPreferenceChangeListener(statusListener)
         super.onPause()
     }
