@@ -152,6 +152,29 @@ int al_ax_trusted(int prompt) {
 	}
 }
 
+int al_automation(const char *bundle_id, int ask) {
+	AEAddressDesc target;
+	OSErr err = AECreateDesc(typeApplicationBundleID, bundle_id, strlen(bundle_id), &target);
+	if (err != noErr) {
+		return err;
+	}
+	OSStatus st = AEDeterminePermissionToAutomateTarget(&target, typeWildCard, typeWildCard, ask ? true : false);
+	AEDisposeDesc(&target);
+	return (int)st;
+}
+
+char *al_running_apps(void) {
+	@autoreleasepool {
+		NSMutableArray *ids = [NSMutableArray array];
+		for (NSRunningApplication *app in [[NSWorkspace sharedWorkspace] runningApplications]) {
+			if (app.bundleIdentifier != nil) {
+				[ids addObject:app.bundleIdentifier];
+			}
+		}
+		return copy_string([ids componentsJoinedByString:@"\n"]);
+	}
+}
+
 static NSMutableDictionary *compiled_scripts;
 
 int al_applescript(const char *src, char **out, char **err) {

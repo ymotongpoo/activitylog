@@ -42,8 +42,11 @@ func RunMain(f func()) {
 // AppleScript error numbers.
 const (
 	errNotPermitted = -1743 // errAEEventNotPermitted
+	errNeedsConsent = -1744 // errAEEventWouldRequireUserConsent
 	errNotRunning   = -600  // procNotFound
 )
+
+const automationHelp = "allow it in the dialog macOS shows, or in System Settings > Privacy & Security > Automation"
 
 // Applications whose AppleScript dictionary has "active tab of window".
 var scriptableBrowsers = map[string]bool{
@@ -76,12 +79,15 @@ type darwin struct {
 	mu      sync.Mutex
 	backoff map[string]time.Time
 	denied  map[string]bool
+	granted map[string]bool // Automation permission known to be granted
+	asking  map[string]bool // consent dialog shown
 }
 
 // New returns the macOS platform.
 // The mode is ignored on macOS.
 func New(log *slog.Logger, _ string) (Platform, error) {
-	return &darwin{log: log, backoff: map[string]time.Time{}, denied: map[string]bool{}}, nil
+	return &darwin{log: log, backoff: map[string]time.Time{}, denied: map[string]bool{},
+		granted: map[string]bool{}, asking: map[string]bool{}}, nil
 }
 
 func goString(p *C.char) string {
@@ -122,6 +128,9 @@ func (d *darwin) BrowserTab(w model.Window) (*model.BrowserInfo, error) {
 	if time.Now().Before(until) {
 		return nil, nil
 	}
+	if !d.checkAutomation(w.AppID, w.AppName) {
+		return nil, nil
+	}
 
 	src := C.CString(fmt.Sprintf(tabScript, w.AppID))
 	defer C.free(unsafe.Pointer(src))
@@ -129,6 +138,11 @@ func (d *darwin) BrowserTab(w model.Window) (*model.BrowserInfo, error) {
 	code := int(C.al_applescript(src, &out, &msg))
 	res, emsg := goString(out), goString(msg)
 	if code != 0 {
+		if code == errNotPermitted {
+			d.mu.Lock()
+			delete(d.granted, id)
+			d.mu.Unlock()
+		}
 		d.fail(id, w.AppName, code, emsg)
 		return nil, fmt.Errorf("applescript %s: %d %s", w.AppID, code, emsg)
 	}
@@ -146,6 +160,74 @@ func (d *darwin) BrowserTab(w model.Window) (*model.BrowserInfo, error) {
 	return &model.BrowserInfo{URL: parts[0], Title: parts[1], Incognito: parts[2] == "incognito"}, nil
 }
 
+func automation(bundleID string, ask bool) int {
+	cid := C.CString(bundleID)
+	defer C.free(unsafe.Pointer(cid))
+	a := C.int(0)
+	if ask {
+		a = 1
+	}
+	return int(C.al_automation(cid, a))
+}
+
+// checkAutomation reports whether the AppleScript for the browser bundleID
+// may run now. AppleScript itself would ask for consent, but its timeout
+// cancels the dialog before the user can answer; ask for it separately.
+func (d *darwin) checkAutomation(bundleID, app string) bool {
+	id := strings.ToLower(bundleID)
+	d.mu.Lock()
+	ok, asking := d.granted[id], d.asking[id]
+	d.mu.Unlock()
+	if ok {
+		return true
+	}
+	if asking {
+		return false
+	}
+	switch st := automation(bundleID, false); st {
+	case 0:
+		d.mu.Lock()
+		d.granted[id] = true
+		d.mu.Unlock()
+		return true
+	case errNeedsConsent:
+		d.ask(bundleID, app)
+		return false
+	case errNotPermitted:
+		d.fail(id, app, errNotPermitted, "")
+		return false
+	default:
+		// Let the script report other errors, e.g. not running.
+		return true
+	}
+}
+
+// ask shows the Automation consent dialog for bundleID in the background.
+func (d *darwin) ask(bundleID, app string) {
+	id := strings.ToLower(bundleID)
+	d.mu.Lock()
+	if d.asking[id] {
+		d.mu.Unlock()
+		return
+	}
+	d.asking[id] = true
+	d.mu.Unlock()
+	d.log.Info("asking for Automation permission", "app", app)
+	go func() {
+		st := automation(bundleID, true)
+		d.mu.Lock()
+		delete(d.asking, id)
+		if st == 0 {
+			d.granted[id] = true
+			delete(d.backoff, id)
+		}
+		d.mu.Unlock()
+		if st != 0 {
+			d.fail(id, app, st, "")
+		}
+	}()
+}
+
 func (d *darwin) fail(id, app string, code int, msg string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -155,7 +237,7 @@ func (d *darwin) fail(id, app string, code int, msg string) {
 		wait = 5 * time.Minute
 		if !d.denied[id] {
 			d.denied[id] = true
-			d.log.Warn("Automation permission denied; allow it in System Settings > Privacy & Security > Automation, or install the browser extension",
+			d.log.Warn("Automation permission denied; "+automationHelp+", or install the browser extension",
 				"app", app, "code", code)
 		}
 	case errNotRunning:
@@ -175,7 +257,43 @@ func (d *darwin) Permissions(prompt bool) []Permission {
 	if !perm.Granted {
 		perm.Detail = "needed for window titles; allow in System Settings > Privacy & Security > Accessibility"
 	}
-	return []Permission{perm}
+	perms := []Permission{perm}
+
+	// Automation can only be checked for running browsers. With prompt set
+	// this blocks until the user answers the dialog.
+	seen := map[string]bool{}
+	for _, bundleID := range strings.Split(goString(C.al_running_apps()), "\n") {
+		id := strings.ToLower(bundleID)
+		if !scriptableBrowsers[id] || seen[id] {
+			continue
+		}
+		seen[id] = true
+		st := automation(bundleID, false)
+		if st == errNeedsConsent && prompt {
+			d.mu.Lock()
+			d.asking[id] = true
+			d.mu.Unlock()
+			st = automation(bundleID, true)
+			d.mu.Lock()
+			delete(d.asking, id)
+			d.mu.Unlock()
+		}
+		p := Permission{Name: "automation: " + bundleID, Granted: st == 0}
+		switch st {
+		case 0:
+			d.mu.Lock()
+			d.granted[id] = true
+			d.mu.Unlock()
+		case errNeedsConsent:
+			p.Detail = "needed for browser tabs without the extension; macOS asks when the agent first reads a tab"
+		case errNotPermitted:
+			p.Detail = "needed for browser tabs without the extension; " + automationHelp
+		default:
+			p.Detail = fmt.Sprintf("permission check failed: %d", st)
+		}
+		perms = append(perms, p)
+	}
+	return perms
 }
 
 func (d *darwin) Mode() string { return "macos" }

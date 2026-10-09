@@ -101,18 +101,21 @@ func Run(ctx context.Context, cfg *config.Config, version string, stderr *slog.L
 	exp.EmitLog(otlp.LogRecord{Time: now, Severity: otlp.SeverityInfo, EventName: "agent.start",
 		Body:       "activitylog-agent " + version + " started in " + plat.Mode() + " mode",
 		Attributes: []otlp.KeyValue{otlp.String("agent.mode", plat.Mode())}})
-	for _, p := range plat.Permissions(true) {
-		sev := otlp.SeverityInfo
-		if !p.Granted {
-			sev = otlp.SeverityWarn
-			log.Warn("permission missing", "permission", p.Name, "detail", p.Detail)
+	// Permission dialogs block until the user answers them.
+	go func() {
+		for _, p := range plat.Permissions(true) {
+			sev := otlp.SeverityInfo
+			if !p.Granted {
+				sev = otlp.SeverityWarn
+				log.Warn("permission missing", "permission", p.Name, "detail", p.Detail)
+			}
+			exp.EmitLog(otlp.LogRecord{Time: time.Now(), Severity: sev, EventName: "agent.permission",
+				Body: fmt.Sprintf("%s granted=%t", p.Name, p.Granted),
+				Attributes: []otlp.KeyValue{
+					otlp.String("agent.permission.name", p.Name), otlp.Bool("agent.permission.granted", p.Granted),
+				}})
 		}
-		exp.EmitLog(otlp.LogRecord{Time: now, Severity: sev, EventName: "agent.permission",
-			Body: fmt.Sprintf("%s granted=%t", p.Name, p.Granted),
-			Attributes: []otlp.KeyValue{
-				otlp.String("agent.permission.name", p.Name), otlp.Bool("agent.permission.granted", p.Granted),
-			}})
-	}
+	}()
 
 	if !cfg.Ingest.Disabled {
 		srv := ingest.NewServer(store, commands, version, log)
