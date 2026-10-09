@@ -1,12 +1,17 @@
 # Grafana ダッシュボード
 
-`activitylog.json` は Grafana Cloud 用のダッシュボード。
+Grafana Cloud 用のダッシュボード。
 メトリクス（Mimir）で集計を、トレース（Tempo）で区間の明細を、ログ（Loki）で状態遷移と診断を見る。
+
+| ファイル | 内容 |
+|---|---|
+| `activitylog.json` | 全デバイス（macOS、Linux、Android）の概要 |
+| `android.json` | Android アプリ専用。画面時間、アプリ、ロック解除、移動経路と速度 |
 
 ## インポート
 
 1. Grafana Cloud で **Dashboards → New → Import** を開く。
-2. `activitylog.json` をアップロードするか、内容を貼り付けて **Load** を押す。
+2. `activitylog.json` または `android.json` をアップロードするか、内容を貼り付けて **Load** を押す。
 3. 必要ならフォルダーと UID を変えて **Import** を押す。
 4. ダッシュボード上部の変数で、データソースを選ぶ。
 
@@ -19,11 +24,14 @@
 
 既定の期間は今日の 0 時から現在まで（`now/d` 〜 `now`）。
 
+`android.json` は既定の期間が直近 24 時間で、データソース変数は `grafanacloud-<stack>-prom` などを自動で選ぶ。
+
 ## 位置の地図
 
 「Location」行の「Locations (Android)」は、Android アプリの `device.location` ログを Geomap に表示する。
 Loki の structured metadata（`geo_location_lat`、`geo_location_lon`）を Extract fields の変換で取り出して数値に変換している。
 位置の記録がオフのとき（デフォルト）は何も表示されない。
+`android.json` の「Route」は同じログを時刻順に線でつなぎ、「Speed」は位置に付いた速度（`activity_location_speed`）を km/h で表示する。
 
 ## ラベル名
 

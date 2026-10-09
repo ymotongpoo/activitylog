@@ -211,7 +211,7 @@ activitylog-agent doctor -send-test
 ローカルのレシーバーに送る構成では、レシーバーの先（Grafana Cloud など）まで届いたかを Grafana 側で確かめてください。
 Grafana の Explore で Loki に `{service_namespace="activitylog"} | event_name="agent.doctor"` と問い合わせると、届いたかどうか確認できます。
 
-ダッシュボードは [dashboards/activitylog.json](dashboards/activitylog.json) をインポートしてください。
+ダッシュボードは [dashboards/activitylog.json](dashboards/activitylog.json) をインポートしてください。Android だけを見るなら [dashboards/android.json](dashboards/android.json) も使えます。
 
 ## プライバシー
 
