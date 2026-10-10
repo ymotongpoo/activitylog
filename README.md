@@ -123,7 +123,7 @@ activitylog-agent example-config > ~/Library/Application\ Support/activitylog/co
 macOS はアドホック署名のバイナリをハッシュで識別するので、`brew upgrade` の後は別のアプリとして扱われ、許可は引き継がれません。
 アップグレード後にエージェントが起動すると、アクセシビリティの一覧に `activitylog-agent` の項目がオフの状態で 1 つ増えます。
 その項目をオンにし、古い項目（前のバージョンのもの）は「−」で削除してください。
-どちらが新しいか分からないときは、`activitylog-agent doctor` で `permission: accessibility` が ok になる方を残します。
+どちらが新しいか分からないときは、両方オンにしておいても構いません（古い項目のバイナリはもうないので、何の効果もありません）。
 オートメーションの許可はダイアログで付け直します。
 
 ソースから入れる場合は、`make -C agent install` で `~/.local/bin` に置いて LaunchAgent を登録します。
