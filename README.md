@@ -120,7 +120,11 @@ activitylog-agent example-config > ~/Library/Application\ Support/activitylog/co
 拡張を入れたほうが取得の遅れがなく、音声再生中かどうかも分かります。
 
 配布しているバイナリは Apple の公証を受けていないアドホック署名です。
-macOS はアドホック署名のバイナリをハッシュで識別するので、`brew upgrade` の後はアクセシビリティとオートメーションの許可を付け直し、`brew services restart activitylog-agent` で再起動してください（古い項目はシステム設定から削除して構いません）。
+macOS はアドホック署名のバイナリをハッシュで識別するので、`brew upgrade` の後は別のアプリとして扱われ、許可は引き継がれません。
+アップグレード後にエージェントが起動すると、アクセシビリティの一覧に `activitylog-agent` の項目がオフの状態で 1 つ増えます。
+その項目をオンにし、古い項目（前のバージョンのもの）は「−」で削除してください。
+どちらが新しいか分からないときは、`activitylog-agent doctor` で `permission: accessibility` が ok になる方を残します。
+オートメーションの許可はダイアログで付け直します。
 
 ソースから入れる場合は、`make -C agent install` で `~/.local/bin` に置いて LaunchAgent を登録します。
 キーチェーンにコード署名用の証明書を作り、`make -C agent install SIGN_IDENTITY="証明書名"` とすると、許可が再ビルド後も残ります。
