@@ -9,7 +9,7 @@ Play ストアには出さず、サイドロードで使う。
 - WorkManager の定期ジョブが 15 分ごとに動き、前回のチェックポイントから現在までの `UsageStatsManager` のイベントを読む。
   - root スパン `active`: `KEYGUARD_HIDDEN`（ロック解除）から `SCREEN_NON_INTERACTIVE` または `KEYGUARD_SHOWN` まで。ロック画面のない端末では `SCREEN_INTERACTIVE` から始める。1 時間を超えると分割し、新しいトレースを始めて前の root へのスパンリンクを付ける。
   - app スパン: `ACTIVITY_RESUMED` のパッケージごと。別パッケージの `ACTIVITY_RESUMED` か root の終了まで。
-  - `browser.tab` スパン: ユーザー補助サービスが記録したアドレスバーの文字列のうち、ブラウザの app スパンに入るもの。
+  - `browser.tab` スパン: ユーザー補助サービスが記録したアドレスバーの文字列のうち、ブラウザの app スパンに入るもの。ドメイン、プライバシー設定に従った URL、ブラウザー名を記録し、ページタイトルは取得しない。[android.json](../dashboards/android.json) の「Top domains」と「Recent tabs」に表示する。
   - 実行の終わりにまだ閉じていない区間は、トレース ID・スパン ID・開始時刻ごと端末に保存して次回に引き継ぐ。途中で送ることはしない。
 - メトリクス（`activity.time`、`activity.app.time`、`activity.category.time`、`activity.browser.domain.time`、`activity.device.unlocks`）は cumulative の Sum。合計値と開始時刻を端末に保存するので、プロセスが殺されても値は増え続ける。開いている区間は「どこまで加算したか」を覚えておき、二重に数えない。
 - ログは `activity.device.screen`（画面オン/オフ、ロック、ロック解除）、`activity.app.switch`、`agent.start`、`agent.permission`、`agent.diagnostic`。
