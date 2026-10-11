@@ -1,7 +1,7 @@
 {
   "title": "Android",
   "uid": "activitylog-android",
-  "description": "Phone usage from the activitylog Android app: screen time, apps, unlocks and location.",
+  "description": "Phone usage from the activitylog Android app: screen time, apps, browser tabs, unlocks and location.",
   "tags": [
     "activitylog",
     "android",
@@ -1114,7 +1114,7 @@
     },
     {
       "type": "row",
-      "title": "Sessions and events",
+      "title": "Browser",
       "id": 19,
       "collapsed": false,
       "gridPos": {
@@ -1126,13 +1126,121 @@
       "panels": []
     },
     {
-      "type": "table",
-      "title": "Recent sessions",
-      "description": "active spans: one per period of use from unlock to screen off. Click a trace ID to open the apps used in the session.",
+      "type": "bargauge",
+      "title": "Top domains",
+      "description": "Time spent on each browser domain in the selected range.",
       "id": 20,
       "gridPos": {
         "x": 0,
         "y": 52,
+        "w": 10,
+        "h": 10
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "sort_desc(topk(15, sum by (url_domain) (increase(activity_browser_domain_time_seconds_total{job=\"activitylog/activitylog-android\", instance=~\"$device\"}[$__range]))))",
+          "legendFormat": "{{url_domain}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "color": {
+            "mode": "continuous-BlPu"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "valueMode": "text",
+        "showUnfilled": true,
+        "namePlacement": "left",
+        "sizing": "manual",
+        "minVizHeight": 16,
+        "maxVizHeight": 24,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "type": "table",
+      "title": "Recent tabs",
+      "description": "Android browser.tab spans. The URL follows the app's URL privacy setting; page titles are not available on Android.",
+      "id": 21,
+      "gridPos": {
+        "x": 10,
+        "y": 52,
+        "w": 14,
+        "h": 10
+      },
+      "datasource": {
+        "type": "tempo",
+        "uid": "${tempo}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "tempo",
+            "uid": "${tempo}"
+          },
+          "refId": "A",
+          "queryType": "traceql",
+          "limit": 50,
+          "spss": 1,
+          "tableType": "spans",
+          "query": "{resource.service.name=\"activitylog-android\" && resource.service.instance.id=~\"${device:regex}\" && span.activity.context.kind=\"browser.tab\"} | select(span.url.domain, span.url.full, span.activity.browser.name)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Sessions and events",
+      "id": 22,
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 63,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Recent sessions",
+      "description": "active spans: one per period of use from unlock to screen off. Click a trace ID to open the apps used in the session.",
+      "id": 23,
+      "gridPos": {
+        "x": 0,
+        "y": 64,
         "w": 12,
         "h": 10
       },
@@ -1166,10 +1274,10 @@
       "type": "logs",
       "title": "Events",
       "description": "App switches and screen events.",
-      "id": 21,
+      "id": 24,
       "gridPos": {
         "x": 12,
-        "y": 52,
+        "y": 64,
         "w": 12,
         "h": 10
       },

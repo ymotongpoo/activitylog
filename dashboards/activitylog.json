@@ -1252,7 +1252,7 @@
       "type": "table",
       "id": 21,
       "title": "Browser tabs",
-      "description": "Focused browser tab intervals (Tempo).",
+      "description": "Focused browser tab intervals (Tempo). URLs follow each platform's privacy settings; Android does not provide page titles.",
       "datasource": {
         "type": "tempo",
         "uid": "${tempo}"
@@ -1271,7 +1271,7 @@
           },
           "refId": "A",
           "queryType": "traceql",
-          "query": "{resource.service.namespace=\"activitylog\" && resource.service.instance.id=~\"${instance:pipe}\" && span.activity.context.kind=\"browser.tab\"} | select(span.url.domain, span.activity.browser.tab.title)",
+          "query": "{resource.service.namespace=\"activitylog\" && resource.service.instance.id=~\"${instance:pipe}\" && span.activity.context.kind=\"browser.tab\"} | select(span.url.domain, span.url.full, span.activity.browser.tab.title, span.activity.browser.name)",
           "limit": 50,
           "spss": 3,
           "tableType": "spans"
