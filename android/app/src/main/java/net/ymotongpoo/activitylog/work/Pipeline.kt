@@ -1,16 +1,20 @@
 package net.ymotongpoo.activitylog.work
 
 import android.app.KeyguardManager
+import android.app.usage.NetworkStats
 import android.content.Context
+import android.os.Process
 import android.provider.Settings
 import android.util.Log
 import net.ymotongpoo.activitylog.BuildConfig
 import net.ymotongpoo.activitylog.browser.ObservationQueue
 import net.ymotongpoo.activitylog.collect.ActivityEngine
+import net.ymotongpoo.activitylog.collect.MobileNetworkUsageCollector
 import net.ymotongpoo.activitylog.collect.PackageAppInfoResolver
 import net.ymotongpoo.activitylog.collect.PersistedState
 import net.ymotongpoo.activitylog.collect.RandomIdGenerator
 import net.ymotongpoo.activitylog.collect.UsageEventSource
+import net.ymotongpoo.activitylog.metrics.MetricNames
 import net.ymotongpoo.activitylog.otlp.DeviceInfo
 import net.ymotongpoo.activitylog.otlp.FlushResult
 import net.ymotongpoo.activitylog.otlp.Flusher
@@ -102,6 +106,8 @@ class Pipeline(context: Context) {
             val out = engine.process(state.tracker, state.metrics, events, observations, nowMs)
             spans = out.spans
             logs += out.logs
+
+            collectMobileNetworkUsage(state, nowMs)
         }
 
         val diagnostics = status.pendingDiagnostics()
@@ -157,6 +163,59 @@ class Pipeline(context: Context) {
         if (loaded != null) return loaded
         val keyguardSecure = ctx.getSystemService(KeyguardManager::class.java)?.isKeyguardSecure == true
         return PersistedState.initial(nowMs, keyguardSecure)
+    }
+
+    private fun collectMobileNetworkUsage(state: PersistedState, nowMs: Long) {
+        val metric = MetricNames.MOBILE_DATA_USAGE
+        val dayStartMs = MobileNetworkUsageCollector.localDayStartMs(nowMs)
+        val deviceAttributes = listOf("activity.network.scope" to "device")
+        if (state.metrics.startTimeMs(metric, deviceAttributes) != dayStartMs) {
+            state.metrics.resetCumulative(metric, dayStartMs)
+        }
+
+        try {
+            val snapshot = MobileNetworkUsageCollector(ctx).queryToday(nowMs)
+            state.metrics.setCumulative(
+                metric,
+                deviceAttributes,
+                snapshot.device.total,
+                snapshot.dayStartMs,
+                nowMs,
+            )
+
+            val resolver = PackageAppInfoResolver(ctx)
+            for ((uid, bytes) in snapshot.byUid) {
+                if (bytes.total <= 0) continue
+                val packages = ctx.packageManager.getPackagesForUid(uid).orEmpty().sorted()
+                val (appId, appName) = when {
+                    uid == NetworkStats.Bucket.UID_REMOVED -> "uid:removed" to "Removed apps"
+                    uid == NetworkStats.Bucket.UID_TETHERING -> "uid:tethering" to "Tethering"
+                    uid == Process.SYSTEM_UID -> "uid:system" to "Android system"
+                    packages.isNotEmpty() -> Pair(
+                        packages.joinToString("+"),
+                        packages.joinToString(" + ") { resolver.resolve(it).label },
+                    )
+                    else -> "uid:$uid" to "UID $uid"
+                }
+                val attributes = listOf(
+                    "activity.network.scope" to "app",
+                    "activity.app.id" to appId,
+                    "activity.app.name" to appName,
+                    "process.uid" to uid.toString(),
+                )
+                state.metrics.setCumulative(
+                    metric,
+                    attributes,
+                    bytes.total,
+                    snapshot.dayStartMs,
+                    nowMs,
+                )
+            }
+        } catch (e: Exception) {
+            // NetworkStatsManager can be unavailable or reject a query on some
+            // Android builds. Keep activity collection and export running.
+            Log.w(TAG, "mobile network usage is unavailable", e)
+        }
     }
 
     /** Emits `agent.start` on install/upgrade/boot and `agent.permission` on changes. */

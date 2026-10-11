@@ -8,8 +8,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * Persistent cumulative totals. The start time is fixed when the state is created so
- * the exported cumulative sums keep increasing across process deaths.
+ * Persistent cumulative totals. Most series use the start time fixed when the state
+ * is created; daily snapshots can supply their own start time.
  */
 class MetricsState(
     val startTimeMs: Long,
@@ -20,6 +20,7 @@ class MetricsState(
         val attributes: List<Pair<String, String>>,
         var value: Double,
         var lastUpdatedMs: Long,
+        var startTimeMs: Long? = null,
     )
 
     fun add(name: String, attributes: List<Pair<String, String>>, delta: Double, atMs: Long) {
@@ -28,6 +29,39 @@ class MetricsState(
         s.value += delta
         s.lastUpdatedMs = maxOf(s.lastUpdatedMs, atMs)
     }
+
+    /** Sets a cumulative metric whose value is a snapshot from [startTimeMs]. */
+    fun setCumulative(
+        name: String,
+        attributes: List<Pair<String, String>>,
+        value: Long,
+        startTimeMs: Long,
+        atMs: Long,
+    ) {
+        if (value < 0) return
+        val s = series.getOrPut(key(name, attributes)) {
+            Series(name, attributes, 0.0, atMs, startTimeMs)
+        }
+        s.value = if (s.startTimeMs == startTimeMs) {
+            maxOf(s.value, value.toDouble())
+        } else {
+            value.toDouble()
+        }
+        s.lastUpdatedMs = atMs
+        s.startTimeMs = startTimeMs
+    }
+
+    /** Resets every series of a daily cumulative metric at the new day boundary. */
+    fun resetCumulative(name: String, startTimeMs: Long) {
+        for (s in series.values) {
+            if (s.name != name) continue
+            s.value = 0.0
+            s.startTimeMs = startTimeMs
+        }
+    }
+
+    fun startTimeMs(name: String, attributes: List<Pair<String, String>>): Long? =
+        series[key(name, attributes)]?.startTimeMs
 
     fun value(name: String, attributes: List<Pair<String, String>> = emptyList()): Double =
         series[key(name, attributes)]?.value ?: 0.0
@@ -44,7 +78,6 @@ class MetricsState(
             series.getOrPut(key(name, attrs)) { Series(name, attrs, 0.0, nowMs) }
         }
         val alwaysKeys = ALWAYS_EXPORTED.map { key(it.first, it.second) }.toSet()
-        val startNs = startTimeMs.millisToNanos()
         val nowNs = maxOf(nowMs, startTimeMs).millisToNanos()
         val byName = series.entries
             .filter { (k, s) -> k in alwaysKeys || nowMs - s.lastUpdatedMs <= activeWindowMs }
@@ -58,7 +91,12 @@ class MetricsState(
                 unit = info.unit,
                 integer = info.integer,
                 points = points.map { s ->
-                    SumPoint(s.attributes.map { attr(it.first, it.second) }, startNs, nowNs, s.value)
+                    SumPoint(
+                        s.attributes.map { attr(it.first, it.second) },
+                        (s.startTimeMs ?: startTimeMs).millisToNanos(),
+                        nowNs,
+                        s.value,
+                    )
                 },
             )
         }
@@ -69,13 +107,13 @@ class MetricsState(
         for (s in series.values) {
             val attrs = JSONArray()
             for ((k, v) in s.attributes) attrs.put(JSONArray().put(k).put(v))
-            arr.put(
-                JSONObject()
-                    .put("name", s.name)
-                    .put("attributes", attrs)
-                    .put("value", s.value)
-                    .put("lastUpdatedMs", s.lastUpdatedMs),
-            )
+            val encoded = JSONObject()
+                .put("name", s.name)
+                .put("attributes", attrs)
+                .put("value", s.value)
+                .put("lastUpdatedMs", s.lastUpdatedMs)
+            s.startTimeMs?.let { encoded.put("startTimeMs", it) }
+            arr.put(encoded)
         }
         return JSONObject().put("startTimeMs", startTimeMs).put("series", arr)
     }
@@ -110,7 +148,13 @@ class MetricsState(
                 }
                 val name = s.getString("name")
                 state.series[key(name, attrs)] =
-                    Series(name, attrs, s.getDouble("value"), s.getLong("lastUpdatedMs"))
+                    Series(
+                        name,
+                        attrs,
+                        s.getDouble("value"),
+                        s.getLong("lastUpdatedMs"),
+                        if (s.has("startTimeMs")) s.getLong("startTimeMs") else null,
+                    )
             }
             return state
         }
