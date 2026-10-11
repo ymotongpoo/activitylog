@@ -11,7 +11,8 @@ Play ストアには出さず、サイドロードで使う。
   - app スパン: `ACTIVITY_RESUMED` のパッケージごと。別パッケージの `ACTIVITY_RESUMED` か root の終了まで。
   - `browser.tab` スパン: ユーザー補助サービスが記録したアドレスバーの文字列のうち、ブラウザの app スパンに入るもの。ドメイン、プライバシー設定に従った URL、ブラウザー名を記録し、ページタイトルは取得しない。[android.json](../dashboards/android.json) の「Top domains」と「Recent tabs」に表示する。
   - 実行の終わりにまだ閉じていない区間は、トレース ID・スパン ID・開始時刻ごと端末に保存して次回に引き継ぐ。途中で送ることはしない。
-- メトリクス（`activity.time`、`activity.app.time`、`activity.category.time`、`activity.browser.domain.time`、`activity.device.unlocks`）は cumulative の Sum。合計値と開始時刻を端末に保存するので、プロセスが殺されても値は増え続ける。開いている区間は「どこまで加算したか」を覚えておき、二重に数えない。
+- メトリクス（`activity.time`、`activity.app.time`、`activity.category.time`、`activity.browser.domain.time`、`activity.network.mobile.usage`、`activity.device.unlocks`）は cumulative の Sum。合計値と開始時刻を端末に保存するので、プロセスが殺されても値は増え続ける。開いている区間は「どこまで加算したか」を覚えておき、二重に数えない。モバイル通信量だけは端末のローカル日付でリセットする。
+- モバイルデータ通信量は Android の `NetworkStatsManager` から当日分を取得する。端末全体の受信・送信合計と、UID（通常はアプリ）ごとの合計を日次 cumulative メトリクスとして 15 分ごとに送る。値は Android の集計による概算で、共有 UID はひとつにまとめられ、システムやテザリングなどアプリに対応しない UID も表示する。「Mobile data」パネルに端末合計とアプリ別内訳を表示する。端末合計とUID別の合計は一致しない場合がある。
 - ログは `activity.device.screen`（画面オン/オフ、ロック、ロック解除）、`activity.app.switch`、`agent.start`、`agent.permission`、`agent.diagnostic`。
 - 送るデータはいったんアプリ内の退避領域（上限 32 MiB、超えたら古いものから捨てる）に書き、古い順に送る。ネットワークエラー、429、5xx のときは残して次回に再送する。ネットワークが戻った時点で送るよう、接続を条件にした再送ジョブも登録する。それ以外の 4xx は捨て、ステータスと応答本文を設定画面の診断欄に出す。
 - 収集自体はネットワークを必要としない。オフラインの間も 15 分ごとに収集して退避領域にためる。
@@ -72,7 +73,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 先に Grafana Cloud の接続先（後述）を入力して「Save」を押しておく。
 設定画面に移動すると Android がアプリを終了させることがあるが、入力した値は画面を離れるときに保存される。
 
-1. 使用状況へのアクセス（Usage Access）: 「Open Usage Access settings」→ activitylog → 「使用状況へのアクセスを許可」をオンにする。これがないと何も収集しない。
+1. 使用状況へのアクセス（Usage Access）: 「Open Usage Access settings」→ activitylog → 「使用状況へのアクセスを許可」をオンにする。これがないと何も収集しない。アプリ別のモバイル通信量にもこの許可を使う。
 2. ユーザー補助（Accessibility）: 「Open Accessibility settings」→「activitylog browser URL capture」をオンにする。ブラウザの URL を取らないなら不要。
 
 Android 13 以降では、ストア以外（Firebase App Tester や adb を含む）から入れたアプリは、使用状況へのアクセスとユーザー補助を「制限付き設定」としてオンにできない。

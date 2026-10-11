@@ -6,7 +6,7 @@ Grafana Cloud 用のダッシュボード。
 | ファイル | 内容 |
 |---|---|
 | `activitylog.json` | 全デバイス（macOS、Linux、Android）の概要 |
-| `android.json` | Android アプリ専用。画面時間、アプリ、ブラウザーのドメイン別時間とタブ URL、ロック解除、移動経路と速度 |
+| `android.json` | Android アプリ専用。画面時間、アプリ、当日のモバイルデータ通信量（端末合計とアプリ別）、ブラウザーのドメイン別時間とタブ URL、ロック解除、移動経路と速度 |
 | `linux.json`、`macos.json` | デスクトップエージェント専用。アクティブ時間、アプリ、ブラウザー、エディター、ターミナル。`target_info` の `os_type` でデバイスを絞る |
 
 ## インポート
@@ -27,6 +27,7 @@ Grafana Cloud 用のダッシュボード。
 
 `android.json`、`linux.json`、`macos.json` は既定の期間が直近 24 時間で、データソース変数は `grafanacloud-<stack>-prom` などを自動で選ぶ。
 デスクトップのブラウザー行は拡張機能、エディターとターミナルの行は対応する拡張機能やシェルのフックがないと空になる。Android はユーザー補助サービスでタブ URL を記録し、「Recent tabs」にドメイン、プライバシー設定に従った URL、ブラウザー名を表示する。ページタイトルは取得しない。
+Android の「Mobile data」は NetworkStatsManager が返す当日（端末のローカル日付）のモバイル通信量を表示する。端末合計は受信と送信の合計、アプリ別は UID ごとの合計で、Android の集計による概算。アプリが UID を共有する場合はまとめて表示し、システムやテザリングなどアプリに対応しない UID も別行にする。Android の端末合計と UID 別の合計は一致しない場合がある。
 
 ## 位置の地図
 
@@ -39,7 +40,7 @@ Loki の structured metadata（`geo_location_lat`、`geo_location_lon`）を Ext
 
 Grafana Cloud の OTLP 取り込みでは、属性名の `.` が `_` に変わる。
 
-- メトリクス: `activity.app.name` → `activity_app_name`、`url.domain` → `url_domain`。`service.instance.id` は `instance`、`job` は `activitylog/activitylog-agent` または `activitylog/activitylog-android` になる。
+- メトリクス: `activity.app.name` → `activity_app_name`、`activity.network.scope` → `activity_network_scope`、`url.domain` → `url_domain`。`service.instance.id` は `instance`、`job` は `activitylog/activitylog-agent` または `activitylog/activitylog-android` になる。
 - ログ: `service.namespace` などのリソース属性はストリームラベル `service_namespace`、`service_instance_id` になり、`event.name` は structured metadata の `event_name` になる。
 - トレース: 属性名はそのまま（`span.activity.context.kind` など）。
 

@@ -1539,6 +1539,131 @@
           "mode": "details"
         }
       }
+    },
+    {
+      "type": "row",
+      "id": 28,
+      "title": "Android mobile data",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 104
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "id": 29,
+      "title": "Mobile data today",
+      "description": "Android device total, received and sent, since the device's local midnight.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 105
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "sum(activity_network_mobile_usage_bytes_total{job=\"activitylog/activitylog-android\", instance=~\"${instance:pipe}\", activity_network_scope=\"device\"})",
+          "legendFormat": "Mobile data",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decbytes",
+          "min": 0,
+          "decimals": 1,
+          "noValue": "0"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "value",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "bargauge",
+      "id": 30,
+      "title": "Mobile data by app / UID today",
+      "description": "Approximate Android usage. Shared UIDs are combined; system, tethering, and unmapped UIDs appear separately. The instance label identifies the device.",
+      "gridPos": {
+        "h": 8,
+        "w": 16,
+        "x": 8,
+        "y": 105
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "sort_desc(topk(15, sum by (instance, activity_app_id, activity_app_name) (activity_network_mobile_usage_bytes_total{job=\"activitylog/activitylog-android\", instance=~\"${instance:pipe}\", activity_network_scope=\"app\"} > 0)))",
+          "legendFormat": "{{instance}} / {{activity_app_name}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decbytes",
+          "min": 0,
+          "color": {
+            "mode": "continuous-BlPu"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "valueMode": "text",
+        "showUnfilled": true,
+        "namePlacement": "left",
+        "sizing": "manual",
+        "minVizHeight": 16,
+        "maxVizHeight": 24,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
     }
   ],
   "refresh": "1m",
@@ -1622,6 +1747,6 @@
   "timezone": "browser",
   "title": "activitylog",
   "uid": "activitylog-overview",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }
