@@ -348,7 +348,7 @@ GNOME Shell 拡張が応答しないとき（設定 `platform: auto` のデフ�
   - `KEYGUARD_HIDDEN`（ロック解除）から `SCREEN_NON_INTERACTIVE` または `KEYGUARD_SHOWN` までを root `active` にする。
   - `ACTIVITY_RESUMED` のパッケージを前面アプリとし、別パッケージの `ACTIVITY_RESUMED` か active の終了までを app スパンにする。
 - `AccessibilityService` はブラウザ（Chrome、Chrome Beta、Brave、Edge など）のアドレスバーのテキストを読み、時刻と一緒にアプリ内のキューに追記する。定期ジョブは app スパンの区間に入る観測を `browser.tab` スパンにする。
-- カテゴリは `ApplicationInfo.category`（`game` / `audio` / `video` / `image` / `social` / `news` / `maps` / `productivity` / `accessibility`）から `Android/<category>` とする。
+- カテゴリはアプリ内の「App categories」で管理する。パッケージ名ごとの手動割り当てを優先し、未設定の場合は `ApplicationInfo.category`（`game` / `audio` / `video` / `image` / `social` / `news` / `maps` / `productivity` / `accessibility`）から `Android/<category>` とする。Android のカテゴリも未設定なら `Uncategorized`。カテゴリの名前変更は割り当てに反映し、削除は該当する割り当ても解除する。カテゴリ一覧と割り当てを一緒に保存し、収集開始時の設定をメトリクスとスパンに適用する。送信済みの過去データは再分類しない。
 - プライバシー設定は、除外パッケージ、除外ドメイン、URL の扱い（`full` / `path` / `domain` / `none`）。
 - 位置はデフォルトでは記録しない。設定でオンにすると、間隔が 1 分（デフォルト）なら location タイプのフォアグラウンドサービスが LocationManager で 1 分ごとに高精度の位置を要求し（Android 12 以降は fused プロバイダー、source `foreground`）、15 分なら定期ジョブが毎回現在地を 1 回取得する（source `periodic`）。どちらでも、ほかのアプリが要求した位置を passive プロバイダーで受け取る（source `passive`）。どちらも `device.location` ログにする。定期ジョブで読むので「常に許可」の位置の権限が必要。座標は設定で小数点以下 3 桁（約 100 m）か 2 桁（約 1 km）に丸められる。スパンやメトリクスには位置を付けない。
 - Play ストアには出さず、サイドロードで使う前提。
