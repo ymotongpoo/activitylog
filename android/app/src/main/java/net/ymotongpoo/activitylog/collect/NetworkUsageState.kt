@@ -7,7 +7,7 @@ import java.time.Instant
 import java.time.ZoneId
 
 /** Android's last observed totals, separate from the counters sent to OTLP. */
-data class MobileNetworkUsageState(
+data class NetworkUsageState(
     val dayStartMs: Long,
     val deviceBytes: Long,
     val uidBytes: Map<Int, Long>,
@@ -18,16 +18,16 @@ data class MobileNetworkUsageState(
         .put("uidBytes", JSONObject().also { o -> uidBytes.forEach { (uid, bytes) -> o.put(uid.toString(), bytes) } })
 
     companion object {
-        fun fromJson(o: JSONObject): MobileNetworkUsageState {
+        fun fromJson(o: JSONObject): NetworkUsageState {
             val uids = o.getJSONObject("uidBytes")
-            return MobileNetworkUsageState(
+            return NetworkUsageState(
                 o.getLong("dayStartMs"), o.getLong("deviceBytes"),
                 uids.keys().asSequence().associate { it.toInt() to uids.getLong(it) },
             )
         }
 
         /** v0.6.4 saved daily totals directly in the metric series. */
-        fun fromLegacy(metrics: MetricsState): MobileNetworkUsageState? {
+        fun fromLegacyMobile(metrics: MetricsState): NetworkUsageState? {
             val series = metrics.allSeries().filter { it.name == MetricNames.MOBILE_DATA_USAGE }
             val device = series.firstOrNull { it.attributes.contains("activity.network.scope" to "device") }
                 ?: return null
@@ -37,7 +37,7 @@ data class MobileNetworkUsageState(
                 val uid = s.attributes.toMap()["process.uid"]?.toIntOrNull() ?: continue
                 uids[uid] = maxOf(uids[uid] ?: 0, s.value.toLong())
             }
-            return MobileNetworkUsageState(start, device.value.toLong(), uids)
+            return NetworkUsageState(start, device.value.toLong(), uids)
         }
 
         /**
@@ -46,16 +46,16 @@ data class MobileNetworkUsageState(
          * Only positive changes from the last Android snapshot become counter deltas.
          */
         fun collect(
-            previous: MobileNetworkUsageState?,
+            previous: NetworkUsageState?,
             nowMs: Long,
             zone: ZoneId = ZoneId.systemDefault(),
-            query: (Long, Long) -> MobileNetworkUsageSnapshot,
-        ): MobileNetworkUsageUpdate {
+            query: (Long, Long) -> NetworkUsageSnapshot,
+        ): NetworkUsageUpdate {
             val midnight = Instant.ofEpochMilli(nowMs).atZone(zone).toLocalDate()
                 .atStartOfDay(zone).toInstant().toEpochMilli()
             // Moving west must not query a window overlapping already credited data.
             val start = maxOf(midnight, previous?.dayStartMs ?: midnight)
-            require(start <= nowMs) { "Clock moved before the last mobile usage window" }
+            require(start <= nowMs) { "Clock moved before the last network usage window" }
             val rolled = previous != null && previous.dayStartMs < start
             val finished = if (rolled) query(previous!!.dayStartMs, start) else null
             val current = query(start, nowMs)
@@ -73,8 +73,8 @@ data class MobileNetworkUsageState(
             val nextUids = (baselineUids.keys + current.byUid.keys).associateWith { uid ->
                 maxOf(baselineUids[uid] ?: 0L, current.byUid[uid]?.total ?: 0L)
             }
-            return MobileNetworkUsageUpdate(
-                MobileNetworkUsageState(start, maxOf(baselineDevice, current.device.total), nextUids),
+            return NetworkUsageUpdate(
+                NetworkUsageState(start, maxOf(baselineDevice, current.device.total), nextUids),
                 previous?.dayStartMs ?: start, deviceDelta, deltas,
             )
         }
@@ -83,8 +83,8 @@ data class MobileNetworkUsageState(
     }
 }
 
-data class MobileNetworkUsageUpdate(
-    val state: MobileNetworkUsageState,
+data class NetworkUsageUpdate(
+    val state: NetworkUsageState,
     val startMs: Long,
     val deviceDelta: Long,
     val uidDeltas: Map<Int, Long>,

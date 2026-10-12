@@ -8,6 +8,27 @@ class MetricsStateTest {
     private val hour = 60L * 60 * 1000
 
     @Test
+    fun transportsKeepSeparateCountersAndIndependentFailureFlags() {
+        val m = MetricsState(1_000)
+        val attrs = listOf("activity.network.scope" to "app", "process.uid" to "42")
+        m.addCumulative(MetricNames.MOBILE_DATA_USAGE, attrs, 25, 500, 1_000)
+        m.addCumulative(MetricNames.WIFI_DATA_USAGE, attrs, 250, 700, 1_000)
+        val restored = MetricsState.fromJson(m.toJson())
+        val mobileFailed = restored.export(48 * hour, mobileNetworkObserved = false)
+        assertTrue(mobileFailed.none { it.name == MetricNames.MOBILE_DATA_USAGE })
+        val wifi = mobileFailed.single { it.name == MetricNames.WIFI_DATA_USAGE }
+        assertEquals("By", wifi.unit)
+        assertTrue(wifi.integer)
+        assertEquals(250.0, wifi.points.single().value, 0.0)
+        assertEquals(700_000_000L, wifi.points.single().startTimeUnixNano)
+        val wifiFailed = restored.export(48 * hour, wifiNetworkObserved = false)
+        assertTrue(wifiFailed.none { it.name == MetricNames.WIFI_DATA_USAGE })
+        assertEquals(25.0, wifiFailed.single { it.name == MetricNames.MOBILE_DATA_USAGE }.points.single().value, 0.0)
+        val bothFailed = restored.export(48 * hour, mobileNetworkObserved = false, wifiNetworkObserved = false)
+        assertTrue(bothFailed.none { it.name == MetricNames.MOBILE_DATA_USAGE || it.name == MetricNames.WIFI_DATA_USAGE })
+    }
+
+    @Test
     fun exportKeepsStartTimeAndOmitsStaleSeries() {
         val m = MetricsState(startTimeMs = 1_000)
         m.add(MetricNames.APP_TIME, listOf("activity.app.name" to "Old", "activity.app.id" to "old"), 5.0, 2_000)

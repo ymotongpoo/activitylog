@@ -9,13 +9,13 @@ import android.util.Log
 import net.ymotongpoo.activitylog.BuildConfig
 import net.ymotongpoo.activitylog.browser.ObservationQueue
 import net.ymotongpoo.activitylog.collect.ActivityEngine
-import net.ymotongpoo.activitylog.collect.MobileNetworkUsageCollector
-import net.ymotongpoo.activitylog.collect.MobileNetworkUsageState
+import net.ymotongpoo.activitylog.collect.NetworkTransport
+import net.ymotongpoo.activitylog.collect.NetworkUsageCollector
+import net.ymotongpoo.activitylog.collect.NetworkUsageState
 import net.ymotongpoo.activitylog.collect.PackageAppInfoResolver
 import net.ymotongpoo.activitylog.collect.PersistedState
 import net.ymotongpoo.activitylog.collect.RandomIdGenerator
 import net.ymotongpoo.activitylog.collect.UsageEventSource
-import net.ymotongpoo.activitylog.metrics.MetricNames
 import net.ymotongpoo.activitylog.otlp.DeviceInfo
 import net.ymotongpoo.activitylog.otlp.FlushResult
 import net.ymotongpoo.activitylog.otlp.Flusher
@@ -101,6 +101,7 @@ class Pipeline(context: Context) {
 
         var spans: List<SpanData> = emptyList()
         var mobileNetworkObserved = false
+        var wifiNetworkObserved = false
         val usageGranted = state.agent.usageAccessGranted == true
         if (usageGranted) {
             val events = UsageEventSource(ctx).query(state.tracker.checkpointMs, nowMs)
@@ -109,7 +110,8 @@ class Pipeline(context: Context) {
             spans = out.spans
             logs += out.logs
 
-            mobileNetworkObserved = collectMobileNetworkUsage(state, nowMs)
+            mobileNetworkObserved = collectNetworkUsage(state, nowMs, NetworkTransport.MOBILE)
+            wifiNetworkObserved = collectNetworkUsage(state, nowMs, NetworkTransport.WIFI)
         }
 
         val diagnostics = status.pendingDiagnostics()
@@ -133,7 +135,9 @@ class Pipeline(context: Context) {
             dropped += spool.put(Signal.LOGS, Gzip.compress(OtlpJsonEncoder.encodeLogs(resource, scope, chunk)))
         }
         if (usageGranted) {
-            val metrics = state.metrics.export(nowMs, mobileNetworkObserved = mobileNetworkObserved)
+            val metrics = state.metrics.export(
+                nowMs, mobileNetworkObserved = mobileNetworkObserved, wifiNetworkObserved = wifiNetworkObserved,
+            )
             dropped += spool.put(Signal.METRICS, Gzip.compress(OtlpJsonEncoder.encodeMetrics(resource, scope, metrics)))
         }
 
@@ -167,11 +171,15 @@ class Pipeline(context: Context) {
         return PersistedState.initial(nowMs, keyguardSecure)
     }
 
-    private fun collectMobileNetworkUsage(state: PersistedState, nowMs: Long): Boolean {
+    private fun collectNetworkUsage(state: PersistedState, nowMs: Long, transport: NetworkTransport): Boolean {
         try {
-            val collector = MobileNetworkUsageCollector(ctx)
-            val update = MobileNetworkUsageState.collect(
-                state.mobileNetwork ?: MobileNetworkUsageState.fromLegacy(state.metrics),
+            val collector = NetworkUsageCollector(ctx, transport)
+            val previous = when (transport) {
+                NetworkTransport.MOBILE -> state.mobileNetwork ?: NetworkUsageState.fromLegacyMobile(state.metrics)
+                NetworkTransport.WIFI -> state.wifiNetwork
+            }
+            val update = NetworkUsageState.collect(
+                previous,
                 nowMs,
                 query = collector::query,
             )
@@ -197,22 +205,25 @@ class Pipeline(context: Context) {
                 )
             }
             state.metrics.addCumulative(
-                MetricNames.MOBILE_DATA_USAGE,
+                transport.metricName,
                 listOf("activity.network.scope" to "device"),
                 update.deviceDelta, update.startMs, nowMs,
             )
             for ((uid, delta) in update.uidDeltas) {
                 state.metrics.addCumulative(
-                    MetricNames.MOBILE_DATA_USAGE, appAttributes.getValue(uid),
+                    transport.metricName, appAttributes.getValue(uid),
                     delta, update.startMs, nowMs,
                 )
             }
-            state.mobileNetwork = update.state
+            when (transport) {
+                NetworkTransport.MOBILE -> state.mobileNetwork = update.state
+                NetworkTransport.WIFI -> state.wifiNetwork = update.state
+            }
             return true
         } catch (e: Exception) {
-            Log.w(TAG, "mobile network usage is unavailable", e)
-            status.diagnostic(Severity.WARN, "Mobile network usage unavailable: ${e.javaClass.simpleName}")
-            // No zero or stale mobile snapshots are emitted on a failed observation.
+            Log.w(TAG, "${transport.label} network usage is unavailable", e)
+            status.diagnostic(Severity.WARN, "${transport.label} network usage unavailable: ${e.javaClass.simpleName}")
+            // No zero or stale network snapshots are emitted on a failed observation.
             return false
         }
     }

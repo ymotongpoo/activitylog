@@ -6,6 +6,7 @@ object MetricNames {
     const val APP_TIME = "activity.app.time"
     const val CATEGORY_TIME = "activity.category.time"
     const val BROWSER_DOMAIN_TIME = "activity.browser.domain.time"
+    const val WIFI_DATA_USAGE = "activity.network.wifi.usage"
     const val MOBILE_DATA_USAGE = "activity.network.mobile.usage"
     const val DEVICE_UNLOCKS = "activity.device.unlocks"
 
@@ -16,6 +17,7 @@ object MetricNames {
         APP_TIME to Info("Time spent in the foreground per application", "s", false),
         CATEGORY_TIME to Info("Time spent per application category", "s", false),
         BROWSER_DOMAIN_TIME to Info("Time spent per browser domain", "s", false),
+        WIFI_DATA_USAGE to Info("Wi-Fi data transferred", "By", true),
         MOBILE_DATA_USAGE to Info("Mobile data transferred", "By", true),
         DEVICE_UNLOCKS to Info("Number of device unlocks", "", true),
     )

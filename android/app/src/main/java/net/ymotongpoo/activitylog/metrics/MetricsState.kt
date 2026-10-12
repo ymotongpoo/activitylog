@@ -54,13 +54,14 @@ class MetricsState(
     /**
      * Builds the metrics to export at [nowMs]. Series that have not changed within
      * [activeWindowMs] are omitted so stale apps/domains do not stay active forever;
-     * the device-level series are always present. Known mobile counters remain
+     * the device-level series are always present. Known network counters remain
      * present during idle days so later traffic has a baseline for increase().
      */
     fun export(
         nowMs: Long,
         activeWindowMs: Long = DEFAULT_ACTIVE_WINDOW_MS,
         mobileNetworkObserved: Boolean = true,
+        wifiNetworkObserved: Boolean = true,
     ): List<SumMetric> {
         for ((name, attrs) in ALWAYS_EXPORTED) {
             series.getOrPut(key(name, attrs)) { Series(name, attrs, 0.0, nowMs) }
@@ -69,8 +70,11 @@ class MetricsState(
         val nowNs = maxOf(nowMs, startTimeMs).millisToNanos()
         val byName = series.entries
             .filter { (k, s) ->
-                if (s.name == MetricNames.MOBILE_DATA_USAGE) mobileNetworkObserved
-                else k in alwaysKeys || nowMs - s.lastUpdatedMs <= activeWindowMs
+                when (s.name) {
+                    MetricNames.MOBILE_DATA_USAGE -> mobileNetworkObserved
+                    MetricNames.WIFI_DATA_USAGE -> wifiNetworkObserved
+                    else -> k in alwaysKeys || nowMs - s.lastUpdatedMs <= activeWindowMs
+                }
             }
             .map { it.value }
             .groupBy { it.name }

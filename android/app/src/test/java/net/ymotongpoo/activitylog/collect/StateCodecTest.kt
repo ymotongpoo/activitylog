@@ -46,7 +46,13 @@ class StateCodecTest {
     fun mobileSourceCheckpointRoundTripsAndOldStateStillLoads() {
         val state = PersistedState.initial(10_000_000, keyguardSecure = false)
         assertNull(StateCodec.decode(StateCodec.encode(state)).mobileNetwork)
-        state.mobileNetwork = MobileNetworkUsageState(5_000, 900, mapOf(42 to 700, -4 to 200))
-        assertEquals(state.mobileNetwork, StateCodec.decode(StateCodec.encode(state)).mobileNetwork)
+        state.mobileNetwork = NetworkUsageState(5_000, 900, mapOf(42 to 700, -4 to 200))
+        val old = StateCodec.decode(StateCodec.encode(state))
+        assertEquals(state.mobileNetwork, old.mobileNetwork)
+        assertNull(old.wifiNetwork)
+        state.wifiNetwork = NetworkUsageState(6_000, 9_000, mapOf(42 to 7_000, -4 to 2_000))
+        val restored = StateCodec.decode(StateCodec.encode(state))
+        assertEquals(state.mobileNetwork, restored.mobileNetwork)
+        assertEquals(state.wifiNetwork, restored.wifiNetwork)
     }
 }
