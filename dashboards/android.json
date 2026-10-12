@@ -37,7 +37,7 @@
         "type": "datasource",
         "query": "prometheus",
         "current": {},
-        "hide": 0,
+        "hide": 2,
         "includeAll": false,
         "multi": false,
         "options": [],
@@ -51,7 +51,7 @@
         "type": "datasource",
         "query": "loki",
         "current": {},
-        "hide": 0,
+        "hide": 2,
         "includeAll": false,
         "multi": false,
         "options": [],
@@ -65,7 +65,7 @@
         "type": "datasource",
         "query": "tempo",
         "current": {},
-        "hide": 0,
+        "hide": 2,
         "includeAll": false,
         "multi": false,
         "options": [],
@@ -85,14 +85,14 @@
         "definition": "label_values(activity_time_seconds_total{job=\"activitylog/activitylog-android\"}, instance)",
         "current": {},
         "hide": 0,
-        "includeAll": true,
-        "allValue": ".*",
-        "multi": true,
+        "includeAll": false,
+        "multi": false,
         "options": [],
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
-        "sort": 1
+        "sort": 1,
+        "description": "Select one Android device. Every panel is filtered to this device."
       }
     ]
   },
@@ -115,7 +115,7 @@
   "panels": [
     {
       "type": "row",
-      "title": "Overview",
+      "title": "Overview ($device)",
       "id": 1,
       "collapsed": false,
       "gridPos": {
@@ -129,7 +129,7 @@
     {
       "type": "stat",
       "title": "Screen time",
-      "description": "Time the device was in use (screen on and unlocked) in the selected range. Combines selected devices; select one Device to view its individual total.",
+      "description": "Time the device was in use (screen on and unlocked) in the selected range. Shows only the device selected above.",
       "id": 2,
       "gridPos": {
         "x": 0,
@@ -149,7 +149,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sum(increase(activity_time_seconds_total{job=\"activitylog/activitylog-android\", instance=~\"$device\", activity_state=\"active\"}[$__range]))",
+          "expr": "sum(increase(activity_time_seconds_total{job=\"activitylog/activitylog-android\", instance=\"$device\", activity_state=\"active\"}[$__range]))",
           "legendFormat": "__auto",
           "range": false,
           "instant": true
@@ -185,7 +185,7 @@
     {
       "type": "stat",
       "title": "Unlocks",
-      "description": "Number of device unlocks in the selected range. Combines selected devices; select one Device to view its individual total.",
+      "description": "Number of device unlocks in the selected range. Shows only the device selected above.",
       "id": 3,
       "gridPos": {
         "x": 3,
@@ -205,7 +205,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sum(increase(activity_device_unlocks_total{job=\"activitylog/activitylog-android\", instance=~\"$device\"}[$__range]))",
+          "expr": "sum(increase(activity_device_unlocks_total{job=\"activitylog/activitylog-android\", instance=\"$device\"}[$__range]))",
           "legendFormat": "__auto",
           "range": false,
           "instant": true
@@ -242,7 +242,7 @@
     {
       "type": "stat",
       "title": "Time per unlock",
-      "description": "Average screen time per unlock. Combines selected devices; select one Device to view its individual total.",
+      "description": "Average screen time per unlock. Shows only the device selected above.",
       "id": 4,
       "gridPos": {
         "x": 6,
@@ -262,7 +262,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sum(increase(activity_time_seconds_total{job=\"activitylog/activitylog-android\", instance=~\"$device\", activity_state=\"active\"}[$__range])) / sum(increase(activity_device_unlocks_total{job=\"activitylog/activitylog-android\", instance=~\"$device\"}[$__range]))",
+          "expr": "sum(increase(activity_time_seconds_total{job=\"activitylog/activitylog-android\", instance=\"$device\", activity_state=\"active\"}[$__range])) / sum(increase(activity_device_unlocks_total{job=\"activitylog/activitylog-android\", instance=\"$device\"}[$__range]))",
           "legendFormat": "__auto",
           "range": false,
           "instant": true
@@ -298,7 +298,7 @@
     {
       "type": "stat",
       "title": "Apps used",
-      "description": "Number of apps that were in the foreground for at least a minute. Combines selected devices; select one Device to view its individual total.",
+      "description": "Number of apps that were in the foreground for at least a minute. Shows only the device selected above.",
       "id": 5,
       "gridPos": {
         "x": 9,
@@ -318,7 +318,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "count(sum by (activity_app_id) (increase(activity_app_time_seconds_total{job=\"activitylog/activitylog-android\", instance=~\"$device\"}[$__range])) >= 60)",
+          "expr": "count(sum by (activity_app_id) (increase(activity_app_time_seconds_total{job=\"activitylog/activitylog-android\", instance=\"$device\"}[$__range])) >= 60)",
           "legendFormat": "__auto",
           "range": false,
           "instant": true
@@ -355,7 +355,7 @@
     {
       "type": "stat",
       "title": "App switches",
-      "description": "activity.app.switch log events. Combines selected devices; select one Device to view its individual total.",
+      "description": "activity.app.switch log events. Shows only the device selected above.",
       "id": 6,
       "gridPos": {
         "x": 12,
@@ -375,7 +375,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sum(count_over_time({service_name=\"activitylog-android\", service_instance_id=~\"${device:pipe}\"} | event_name=\"activity.app.switch\" [$__range]))",
+          "expr": "sum(count_over_time({service_name=\"activitylog-android\", service_instance_id=\"$device\"} | event_name=\"activity.app.switch\" [$__range]))",
           "queryType": "instant"
         }
       ],
@@ -410,7 +410,7 @@
     {
       "type": "stat",
       "title": "Location fixes",
-      "description": "device.location log events. 0 when location recording is off. Combines selected devices; select one Device to view its individual total.",
+      "description": "device.location log events. 0 when location recording is off. Shows only the device selected above.",
       "id": 7,
       "gridPos": {
         "x": 15,
@@ -430,7 +430,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sum(count_over_time({service_name=\"activitylog-android\", service_instance_id=~\"${device:pipe}\"} | event_name=\"device.location\" [$__range]))",
+          "expr": "sum(count_over_time({service_name=\"activitylog-android\", service_instance_id=\"$device\"} | event_name=\"device.location\" [$__range]))",
           "queryType": "instant"
         }
       ],
@@ -465,7 +465,7 @@
     {
       "type": "stat",
       "title": "Mobile data",
-      "description": "Received and sent mobile data during the selected time range. Estimated from 15-minute cumulative samples; at least two samples are required. Combines selected devices; select one Device to view its individual total.",
+      "description": "Received and sent mobile data during the selected time range. Estimated from 15-minute cumulative samples; at least two samples are required. Shows only the device selected above.",
       "id": 26,
       "gridPos": {
         "x": 18,
@@ -485,7 +485,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sum(increase(activity_network_mobile_usage_bytes_total{job=\"activitylog/activitylog-android\", instance=~\"$device\", activity_network_scope=\"device\"}[$__range]))",
+          "expr": "sum(increase(activity_network_mobile_usage_bytes_total{job=\"activitylog/activitylog-android\", instance=\"$device\", activity_network_scope=\"device\"}[$__range]))",
           "legendFormat": "Mobile data",
           "range": false,
           "instant": true
@@ -520,7 +520,7 @@
     {
       "type": "stat",
       "title": "Wi-Fi data",
-      "description": "Received and sent Wi-Fi data during the selected time range. Estimated from 15-minute cumulative samples; at least two samples are required. Combines selected devices; select one Device to view its individual total.",
+      "description": "Received and sent Wi-Fi data during the selected time range. Estimated from 15-minute cumulative samples; at least two samples are required. Shows only the device selected above.",
       "id": 28,
       "gridPos": {
         "x": 21,
@@ -540,7 +540,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sum(increase(activity_network_wifi_usage_bytes_total{job=\"activitylog/activitylog-android\", instance=~\"$device\", activity_network_scope=\"device\"}[$__range]))",
+          "expr": "sum(increase(activity_network_wifi_usage_bytes_total{job=\"activitylog/activitylog-android\", instance=\"$device\", activity_network_scope=\"device\"}[$__range]))",
           "legendFormat": "Wi-Fi data",
           "range": false,
           "instant": true
@@ -595,7 +595,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sum by (activity_category) (increase(activity_category_time_seconds_total{job=\"activitylog/activitylog-android\", instance=~\"$device\"}[$__interval]))",
+          "expr": "sum by (activity_category) (increase(activity_category_time_seconds_total{job=\"activitylog/activitylog-android\", instance=\"$device\"}[$__interval]))",
           "legendFormat": "{{activity_category}}",
           "range": true,
           "instant": false,
@@ -659,7 +659,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sum by (activity_category) (increase(activity_category_time_seconds_total{job=\"activitylog/activitylog-android\", instance=~\"$device\"}[$__range]))",
+          "expr": "sum by (activity_category) (increase(activity_category_time_seconds_total{job=\"activitylog/activitylog-android\", instance=\"$device\"}[$__range]))",
           "legendFormat": "{{activity_category}}",
           "range": false,
           "instant": true
@@ -701,7 +701,7 @@
     {
       "id": 31,
       "type": "row",
-      "title": "By device",
+      "title": "By device ($device)",
       "collapsed": false,
       "panels": [],
       "gridPos": {
@@ -714,7 +714,7 @@
     {
       "type": "bargauge",
       "title": "Screen time by device",
-      "description": "Each selected device shown separately over the selected time range. Requires at least two samples per series.",
+      "description": "Usage of the device selected above over the selected time range. Requires at least two samples per series.",
       "id": 32,
       "gridPos": {
         "x": 0,
@@ -734,7 +734,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sort_desc(sum by (instance) (increase(activity_time_seconds_total{job=\"activitylog/activitylog-android\", instance=~\"$device\", activity_state=\"active\"}[$__range])))",
+          "expr": "sort_desc(sum by (instance) (increase(activity_time_seconds_total{job=\"activitylog/activitylog-android\", instance=\"$device\", activity_state=\"active\"}[$__range])))",
           "legendFormat": "{{instance}}",
           "range": false,
           "instant": true
@@ -772,7 +772,7 @@
     {
       "type": "bargauge",
       "title": "Unlocks by device",
-      "description": "Each selected device shown separately over the selected time range. Requires at least two samples per series.",
+      "description": "Usage of the device selected above over the selected time range. Requires at least two samples per series.",
       "id": 33,
       "gridPos": {
         "x": 6,
@@ -792,7 +792,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sort_desc(sum by (instance) (increase(activity_device_unlocks_total{job=\"activitylog/activitylog-android\", instance=~\"$device\"}[$__range])))",
+          "expr": "sort_desc(sum by (instance) (increase(activity_device_unlocks_total{job=\"activitylog/activitylog-android\", instance=\"$device\"}[$__range])))",
           "legendFormat": "{{instance}}",
           "range": false,
           "instant": true
@@ -831,7 +831,7 @@
     {
       "type": "bargauge",
       "title": "Mobile data by device",
-      "description": "Each selected device shown separately over the selected time range. Requires at least two samples per series.",
+      "description": "Usage of the device selected above over the selected time range. Requires at least two samples per series.",
       "id": 34,
       "gridPos": {
         "x": 12,
@@ -851,7 +851,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sort_desc(sum by (instance) (increase(activity_network_mobile_usage_bytes_total{job=\"activitylog/activitylog-android\", instance=~\"$device\", activity_network_scope=\"device\"}[$__range])))",
+          "expr": "sort_desc(sum by (instance) (increase(activity_network_mobile_usage_bytes_total{job=\"activitylog/activitylog-android\", instance=\"$device\", activity_network_scope=\"device\"}[$__range])))",
           "legendFormat": "{{instance}}",
           "range": false,
           "instant": true
@@ -889,7 +889,7 @@
     {
       "type": "bargauge",
       "title": "Wi-Fi data by device",
-      "description": "Each selected device shown separately over the selected time range. Requires at least two samples per series.",
+      "description": "Usage of the device selected above over the selected time range. Requires at least two samples per series.",
       "id": 35,
       "gridPos": {
         "x": 18,
@@ -909,7 +909,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sort_desc(sum by (instance) (increase(activity_network_wifi_usage_bytes_total{job=\"activitylog/activitylog-android\", instance=~\"$device\", activity_network_scope=\"device\"}[$__range])))",
+          "expr": "sort_desc(sum by (instance) (increase(activity_network_wifi_usage_bytes_total{job=\"activitylog/activitylog-android\", instance=\"$device\", activity_network_scope=\"device\"}[$__range])))",
           "legendFormat": "{{instance}}",
           "range": false,
           "instant": true
@@ -946,7 +946,7 @@
     },
     {
       "type": "row",
-      "title": "Apps",
+      "title": "Apps ($device)",
       "id": 10,
       "collapsed": false,
       "gridPos": {
@@ -960,7 +960,7 @@
     {
       "type": "bargauge",
       "title": "Top apps",
-      "description": "Foreground time per app in the selected range (top 15). Rankings are calculated separately for each selected device.",
+      "description": "Foreground time per app in the selected range (top 15). Rankings include only the selected device.",
       "id": 11,
       "gridPos": {
         "x": 0,
@@ -980,7 +980,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sort_desc(topk by (instance) (15, sum by (instance, activity_app_id, activity_app_name) (increase(activity_app_time_seconds_total{job=\"activitylog/activitylog-android\", instance=~\"$device\"}[$__range]))))",
+          "expr": "sort_desc(topk by (instance) (15, sum by (instance, activity_app_id, activity_app_name) (increase(activity_app_time_seconds_total{job=\"activitylog/activitylog-android\", instance=\"$device\"}[$__range]))))",
           "legendFormat": "{{instance}} / {{activity_app_name}}",
           "range": false,
           "instant": true
@@ -1017,7 +1017,7 @@
     {
       "type": "timeseries",
       "title": "Top apps per hour",
-      "description": "Foreground time per hour of the 8 apps used most in the selected range. Rankings are calculated separately for each selected device.",
+      "description": "Foreground time per hour of the 8 apps used most in the selected range. Rankings include only the selected device.",
       "id": 12,
       "gridPos": {
         "x": 10,
@@ -1037,7 +1037,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sum by (instance, activity_app_id, activity_app_name) (increase(activity_app_time_seconds_total{job=\"activitylog/activitylog-android\", instance=~\"$device\"}[$__interval])) and on (instance, activity_app_id, activity_app_name) topk by (instance) (8, sum by (instance, activity_app_id, activity_app_name) (increase(activity_app_time_seconds_total{job=\"activitylog/activitylog-android\", instance=~\"$device\"}[$__range] @ end())))",
+          "expr": "sum by (instance, activity_app_id, activity_app_name) (increase(activity_app_time_seconds_total{job=\"activitylog/activitylog-android\", instance=\"$device\"}[$__interval])) and on (instance, activity_app_id, activity_app_name) topk by (instance) (8, sum by (instance, activity_app_id, activity_app_name) (increase(activity_app_time_seconds_total{job=\"activitylog/activitylog-android\", instance=\"$device\"}[$__range] @ end())))",
           "legendFormat": "{{instance}} / {{activity_app_name}}",
           "range": true,
           "instant": false,
@@ -1101,7 +1101,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sum(increase(activity_device_unlocks_total{job=\"activitylog/activitylog-android\", instance=~\"$device\"}[$__interval]))",
+          "expr": "sum(increase(activity_device_unlocks_total{job=\"activitylog/activitylog-android\", instance=\"$device\"}[$__interval]))",
           "legendFormat": "unlocks",
           "range": true,
           "instant": false,
@@ -1164,7 +1164,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sum(count_over_time({service_name=\"activitylog-android\", service_instance_id=~\"${device:pipe}\"} | event_name=\"activity.app.switch\" [$__interval]))",
+          "expr": "sum(count_over_time({service_name=\"activitylog-android\", service_instance_id=\"$device\"} | event_name=\"activity.app.switch\" [$__interval]))",
           "queryType": "range",
           "legendFormat": "switches"
         }
@@ -1204,7 +1204,7 @@
     },
     {
       "type": "row",
-      "title": "Location",
+      "title": "Location ($device)",
       "id": 15,
       "collapsed": false,
       "gridPos": {
@@ -1238,7 +1238,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "{service_name=\"activitylog-android\", service_instance_id=~\"${device:pipe}\"} | event_name=\"device.location\"",
+          "expr": "{service_name=\"activitylog-android\", service_instance_id=\"$device\"} | event_name=\"device.location\"",
           "queryType": "range",
           "maxLines": 5000
         }
@@ -1372,7 +1372,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "avg(avg_over_time({service_name=\"activitylog-android\", service_instance_id=~\"${device:pipe}\"} | event_name=\"device.location\" | activity_location_speed != \"\" | unwrap activity_location_speed [$__interval])) * 3.6",
+          "expr": "avg(avg_over_time({service_name=\"activitylog-android\", service_instance_id=\"$device\"} | event_name=\"device.location\" | activity_location_speed != \"\" | unwrap activity_location_speed [$__interval])) * 3.6",
           "queryType": "range",
           "legendFormat": "speed"
         }
@@ -1429,7 +1429,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sum by (activity_location_source) (count_over_time({service_name=\"activitylog-android\", service_instance_id=~\"${device:pipe}\"} | event_name=\"device.location\" [$__interval]))",
+          "expr": "sum by (activity_location_source) (count_over_time({service_name=\"activitylog-android\", service_instance_id=\"$device\"} | event_name=\"device.location\" [$__interval]))",
           "queryType": "range",
           "legendFormat": "{{activity_location_source}}"
         }
@@ -1470,7 +1470,7 @@
     },
     {
       "type": "row",
-      "title": "Browser",
+      "title": "Browser ($device)",
       "id": 19,
       "collapsed": false,
       "gridPos": {
@@ -1504,7 +1504,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sort_desc(topk(15, sum by (url_domain) (increase(activity_browser_domain_time_seconds_total{job=\"activitylog/activitylog-android\", instance=~\"$device\"}[$__range]))))",
+          "expr": "sort_desc(topk(15, sum by (url_domain) (increase(activity_browser_domain_time_seconds_total{job=\"activitylog/activitylog-android\", instance=\"$device\"}[$__range]))))",
           "legendFormat": "{{url_domain}}",
           "range": false,
           "instant": true
@@ -1564,7 +1564,7 @@
           "limit": 50,
           "spss": 1,
           "tableType": "spans",
-          "query": "{resource.service.name=\"activitylog-android\" && resource.service.instance.id=~\"${device:regex}\" && span.activity.context.kind=\"browser.tab\"} | select(span.url.domain, span.url.full, span.activity.browser.name)"
+          "query": "{resource.service.name=\"activitylog-android\" && resource.service.instance.id=\"$device\" && span.activity.context.kind=\"browser.tab\"} | select(span.url.domain, span.url.full, span.activity.browser.name)"
         }
       ],
       "fieldConfig": {
@@ -1578,7 +1578,7 @@
     },
     {
       "type": "row",
-      "title": "Sessions and events",
+      "title": "Sessions and events ($device)",
       "id": 22,
       "collapsed": false,
       "gridPos": {
@@ -1614,7 +1614,7 @@
           "queryType": "traceql",
           "limit": 50,
           "tableType": "traces",
-          "query": "{resource.service.name=\"activitylog-android\" && resource.service.instance.id=~\"${device:regex}\" && name=\"active\"}"
+          "query": "{resource.service.name=\"activitylog-android\" && resource.service.instance.id=\"$device\" && name=\"active\"}"
         }
       ],
       "fieldConfig": {
@@ -1649,7 +1649,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "{service_name=\"activitylog-android\", service_instance_id=~\"${device:pipe}\"} | event_name=~\"activity.app.switch|activity.device.screen\"",
+          "expr": "{service_name=\"activitylog-android\", service_instance_id=\"$device\"} | event_name=~\"activity.app.switch|activity.device.screen\"",
           "queryType": "range"
         }
       ],
@@ -1670,7 +1670,7 @@
     },
     {
       "type": "row",
-      "title": "Mobile data",
+      "title": "Mobile data ($device)",
       "id": 25,
       "collapsed": false,
       "gridPos": {
@@ -1684,7 +1684,7 @@
     {
       "type": "bargauge",
       "title": "Top apps by mobile data",
-      "description": "Top 15 apps / UIDs by received and sent mobile data during the selected time range. Shared UIDs are combined; system and unmapped UIDs appear separately. Requires at least two samples per series. Rankings are calculated separately for each selected device.",
+      "description": "Top 15 apps / UIDs by received and sent mobile data during the selected time range. Shared UIDs are combined; system and unmapped UIDs appear separately. Requires at least two samples per series. Rankings include only the selected device.",
       "id": 27,
       "gridPos": {
         "x": 0,
@@ -1704,7 +1704,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sort_desc(topk by (instance) (15, sum by (instance, activity_app_id, activity_app_name) (increase(activity_network_mobile_usage_bytes_total{job=\"activitylog/activitylog-android\", instance=~\"$device\", activity_network_scope=\"app\"}[$__range])) > 0))",
+          "expr": "sort_desc(topk by (instance) (15, sum by (instance, activity_app_id, activity_app_name) (increase(activity_network_mobile_usage_bytes_total{job=\"activitylog/activitylog-android\", instance=\"$device\", activity_network_scope=\"app\"}[$__range])) > 0))",
           "legendFormat": "{{instance}} / {{activity_app_name}}",
           "range": false,
           "instant": true
@@ -1741,7 +1741,7 @@
     },
     {
       "type": "row",
-      "title": "Wi-Fi data",
+      "title": "Wi-Fi data ($device)",
       "id": 29,
       "collapsed": false,
       "gridPos": {
@@ -1755,7 +1755,7 @@
     {
       "type": "bargauge",
       "title": "Top apps by Wi-Fi data",
-      "description": "Top 15 apps / UIDs by received and sent Wi-Fi data during the selected time range. Shared UIDs are combined; system and unmapped UIDs appear separately. Requires at least two samples per series. Rankings are calculated separately for each selected device.",
+      "description": "Top 15 apps / UIDs by received and sent Wi-Fi data during the selected time range. Shared UIDs are combined; system and unmapped UIDs appear separately. Requires at least two samples per series. Rankings include only the selected device.",
       "id": 30,
       "gridPos": {
         "x": 0,
@@ -1775,7 +1775,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sort_desc(topk by (instance) (15, sum by (instance, activity_app_id, activity_app_name) (increase(activity_network_wifi_usage_bytes_total{job=\"activitylog/activitylog-android\", instance=~\"$device\", activity_network_scope=\"app\"}[$__range])) > 0))",
+          "expr": "sort_desc(topk by (instance) (15, sum by (instance, activity_app_id, activity_app_name) (increase(activity_network_wifi_usage_bytes_total{job=\"activitylog/activitylog-android\", instance=\"$device\", activity_network_scope=\"app\"}[$__range])) > 0))",
           "legendFormat": "{{instance}} / {{activity_app_name}}",
           "range": false,
           "instant": true

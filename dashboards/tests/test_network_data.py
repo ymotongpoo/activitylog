@@ -63,7 +63,7 @@ class NetworkDataDashboardTest(unittest.TestCase):
                             .replace('${instance:pipe}', device).replace('$device', device))
                 # Two-day source history: selection must return 24h / 1h increments,
                 # not the latest absolute total. The last sample is seven minutes old.
-                for duration, device, expected in [('24h', 'phone-a', 960), ('1h', 'phone-a', 40), ('24h', '.*', 10560)]:
+                for duration, device, expected in [('24h', 'phone-a', 960), ('1h', 'phone-a', 40), ('24h', 'phone-b', 9600)]:
                     checks.append({'expr': query(total, duration, device), 'eval_time': '48h7m',
                                    'exp_samples': [{'labels': '{}', 'value': expected * scale}]})
                 labels = 'instance="phone-a",'
