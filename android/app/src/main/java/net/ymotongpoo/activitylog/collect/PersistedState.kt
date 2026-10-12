@@ -19,6 +19,7 @@ class PersistedState(
     val tracker: TrackerState,
     val metrics: MetricsState,
     val agent: AgentState = AgentState(),
+    var mobileNetwork: MobileNetworkUsageState? = null,
 ) {
     companion object {
         /** On the first run, read this much history so the user sees data right away. */
@@ -42,6 +43,7 @@ object StateCodec {
         .put("tracker", encodeTracker(state.tracker))
         .put("metrics", state.metrics.toJson())
         .put("agent", encodeAgent(state.agent))
+        .apply { state.mobileNetwork?.let { put("mobileNetwork", it.toJson()) } }
         .toString()
 
     /** Throws [org.json.JSONException] when the content is corrupt. */
@@ -51,6 +53,7 @@ object StateCodec {
             tracker = decodeTracker(o.getJSONObject("tracker")),
             metrics = MetricsState.fromJson(o.getJSONObject("metrics")),
             agent = o.optJSONObject("agent")?.let(::decodeAgent) ?: AgentState(),
+            mobileNetwork = o.optJSONObject("mobileNetwork")?.let(MobileNetworkUsageState::fromJson),
         )
     }
 

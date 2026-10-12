@@ -4,8 +4,6 @@ import android.app.usage.NetworkStats
 import android.app.usage.NetworkStatsManager
 import android.content.Context
 import android.net.ConnectivityManager
-import java.time.Instant
-import java.time.ZoneId
 
 data class NetworkBytes(val received: Long, val sent: Long) {
     val total: Long get() = received + sent
@@ -17,18 +15,17 @@ data class NetworkBytes(val received: Long, val sent: Long) {
 }
 
 data class MobileNetworkUsageSnapshot(
-    val dayStartMs: Long,
     val device: NetworkBytes,
     val byUid: Map<Int, NetworkBytes>,
 )
 
-/** Reads today's mobile traffic from Android's network usage history. */
+/** Reads mobile traffic for a time window from Android's network usage history. */
 class MobileNetworkUsageCollector(context: Context) {
     private val manager = context.getSystemService(NetworkStatsManager::class.java)
 
-    fun queryToday(nowMs: Long): MobileNetworkUsageSnapshot {
+    fun query(startMs: Long, endMs: Long): MobileNetworkUsageSnapshot {
         val statsManager = checkNotNull(manager) { "NetworkStatsManager is unavailable" }
-        val dayStartMs = localDayStartMs(nowMs)
+        require(startMs <= endMs)
 
         // A null subscriber ID asks Android for usage across mobile networks and
         // avoids reading the restricted subscriber ID on Android 10 and later.
@@ -36,8 +33,8 @@ class MobileNetworkUsageCollector(context: Context) {
             statsManager.querySummaryForDevice(
                 ConnectivityManager.TYPE_MOBILE,
                 null,
-                dayStartMs,
-                nowMs,
+                startMs,
+                endMs,
             ),
         ) { "Android returned no device mobile usage statistics" }
 
@@ -46,8 +43,8 @@ class MobileNetworkUsageCollector(context: Context) {
             statsManager.querySummary(
                 ConnectivityManager.TYPE_MOBILE,
                 null,
-                dayStartMs,
-                nowMs,
+                startMs,
+                endMs,
             ),
         ) { "Android returned no per-UID mobile usage statistics" }
         try {
@@ -62,19 +59,8 @@ class MobileNetworkUsageCollector(context: Context) {
         }
 
         return MobileNetworkUsageSnapshot(
-            dayStartMs = dayStartMs,
             device = NetworkBytes(device.rxBytes, device.txBytes),
             byUid = byUid,
         )
-    }
-
-    companion object {
-        fun localDayStartMs(nowMs: Long): Long {
-            val zone = ZoneId.systemDefault()
-            return Instant.ofEpochMilli(nowMs).atZone(zone).toLocalDate()
-                .atStartOfDay(zone)
-                .toInstant()
-                .toEpochMilli()
-        }
     }
 }

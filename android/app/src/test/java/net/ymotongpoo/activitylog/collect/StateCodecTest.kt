@@ -41,4 +41,12 @@ class StateCodecTest {
         assertEquals(s.tracker.checkpointMs, s.metrics.startTimeMs)
         assertEquals(true, s.tracker.keyguardSeen)
     }
+
+    @Test
+    fun mobileSourceCheckpointRoundTripsAndOldStateStillLoads() {
+        val state = PersistedState.initial(10_000_000, keyguardSecure = false)
+        assertNull(StateCodec.decode(StateCodec.encode(state)).mobileNetwork)
+        state.mobileNetwork = MobileNetworkUsageState(5_000, 900, mapOf(42 to 700, -4 to 200))
+        assertEquals(state.mobileNetwork, StateCodec.decode(StateCodec.encode(state)).mobileNetwork)
+    }
 }

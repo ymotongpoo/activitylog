@@ -9,7 +9,7 @@ import org.json.JSONObject
 
 /**
  * Persistent cumulative totals. Most series use the start time fixed when the state
- * is created; daily snapshots can supply their own start time.
+ * is created; externally sourced counters can supply their own initial start time.
  */
 class MetricsState(
     val startTimeMs: Long,
@@ -30,38 +30,21 @@ class MetricsState(
         s.lastUpdatedMs = maxOf(s.lastUpdatedMs, atMs)
     }
 
-    /** Sets a cumulative metric whose value is a snapshot from [startTimeMs]. */
-    fun setCumulative(
+    /** Adds a measured delta, retaining a zero baseline and a fixed counter start. */
+    fun addCumulative(
         name: String,
         attributes: List<Pair<String, String>>,
-        value: Long,
+        delta: Long,
         startTimeMs: Long,
         atMs: Long,
     ) {
-        if (value < 0) return
+        require(delta >= 0)
         val s = series.getOrPut(key(name, attributes)) {
             Series(name, attributes, 0.0, atMs, startTimeMs)
         }
-        s.value = if (s.startTimeMs == startTimeMs) {
-            maxOf(s.value, value.toDouble())
-        } else {
-            value.toDouble()
-        }
+        s.value += delta.toDouble()
         s.lastUpdatedMs = atMs
-        s.startTimeMs = startTimeMs
     }
-
-    /** Resets every series of a daily cumulative metric at the new day boundary. */
-    fun resetCumulative(name: String, startTimeMs: Long) {
-        for (s in series.values) {
-            if (s.name != name) continue
-            s.value = 0.0
-            s.startTimeMs = startTimeMs
-        }
-    }
-
-    fun startTimeMs(name: String, attributes: List<Pair<String, String>>): Long? =
-        series[key(name, attributes)]?.startTimeMs
 
     fun value(name: String, attributes: List<Pair<String, String>> = emptyList()): Double =
         series[key(name, attributes)]?.value ?: 0.0
@@ -71,16 +54,24 @@ class MetricsState(
     /**
      * Builds the metrics to export at [nowMs]. Series that have not changed within
      * [activeWindowMs] are omitted so stale apps/domains do not stay active forever;
-     * the device-level series are always present.
+     * the device-level series are always present. Known mobile counters remain
+     * present during idle days so later traffic has a baseline for increase().
      */
-    fun export(nowMs: Long, activeWindowMs: Long = DEFAULT_ACTIVE_WINDOW_MS): List<SumMetric> {
+    fun export(
+        nowMs: Long,
+        activeWindowMs: Long = DEFAULT_ACTIVE_WINDOW_MS,
+        mobileNetworkObserved: Boolean = true,
+    ): List<SumMetric> {
         for ((name, attrs) in ALWAYS_EXPORTED) {
             series.getOrPut(key(name, attrs)) { Series(name, attrs, 0.0, nowMs) }
         }
         val alwaysKeys = ALWAYS_EXPORTED.map { key(it.first, it.second) }.toSet()
         val nowNs = maxOf(nowMs, startTimeMs).millisToNanos()
         val byName = series.entries
-            .filter { (k, s) -> k in alwaysKeys || nowMs - s.lastUpdatedMs <= activeWindowMs }
+            .filter { (k, s) ->
+                if (s.name == MetricNames.MOBILE_DATA_USAGE) mobileNetworkObserved
+                else k in alwaysKeys || nowMs - s.lastUpdatedMs <= activeWindowMs
+            }
             .map { it.value }
             .groupBy { it.name }
         return MetricNames.info.mapNotNull { (name, info) ->

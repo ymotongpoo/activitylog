@@ -41,4 +41,23 @@ class MetricsStateTest {
         assertEquals(m.allSeries(), r.allSeries())
         assertEquals(2.5, r.value(MetricNames.BROWSER_DOMAIN_TIME, listOf("url.domain" to "example.com")), 0.0)
     }
+
+    @Test
+    fun idleMobileCountersKeepBaselineButFailedReadsAreNotFreshSamples() {
+        val m = MetricsState(1_000)
+        val attrs = listOf("activity.network.scope" to "device")
+        m.addCumulative(MetricNames.MOBILE_DATA_USAGE, attrs, 0, 500, 1_000)
+        val restored = MetricsState.fromJson(m.toJson())
+        val idle = restored.export(48 * hour).single { it.name == MetricNames.MOBILE_DATA_USAGE }
+        assertEquals(0.0, idle.points.single().value, 0.0)
+        assertEquals(500_000_000L, idle.points.single().startTimeUnixNano)
+        restored.addCumulative(MetricNames.MOBILE_DATA_USAGE, attrs, 25, 48 * hour, 48 * hour)
+        val exported = restored.export(48 * hour).single { it.name == MetricNames.MOBILE_DATA_USAGE }
+        assertEquals(25.0, exported.points.single().value, 0.0)
+        assertEquals(500_000_000L, exported.points.single().startTimeUnixNano)
+        val failed = restored.export(49 * hour, mobileNetworkObserved = false)
+        assertTrue(failed.none { it.name == MetricNames.MOBILE_DATA_USAGE })
+        assertTrue(failed.any { it.name == MetricNames.ACTIVITY_TIME })
+        assertEquals(25.0, restored.value(MetricNames.MOBILE_DATA_USAGE, attrs), 0.0)
+    }
 }

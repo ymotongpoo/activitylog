@@ -10,6 +10,7 @@ import net.ymotongpoo.activitylog.BuildConfig
 import net.ymotongpoo.activitylog.browser.ObservationQueue
 import net.ymotongpoo.activitylog.collect.ActivityEngine
 import net.ymotongpoo.activitylog.collect.MobileNetworkUsageCollector
+import net.ymotongpoo.activitylog.collect.MobileNetworkUsageState
 import net.ymotongpoo.activitylog.collect.PackageAppInfoResolver
 import net.ymotongpoo.activitylog.collect.PersistedState
 import net.ymotongpoo.activitylog.collect.RandomIdGenerator
@@ -99,6 +100,7 @@ class Pipeline(context: Context) {
         logs += locationLogs
 
         var spans: List<SpanData> = emptyList()
+        var mobileNetworkObserved = false
         val usageGranted = state.agent.usageAccessGranted == true
         if (usageGranted) {
             val events = UsageEventSource(ctx).query(state.tracker.checkpointMs, nowMs)
@@ -107,7 +109,7 @@ class Pipeline(context: Context) {
             spans = out.spans
             logs += out.logs
 
-            collectMobileNetworkUsage(state, nowMs)
+            mobileNetworkObserved = collectMobileNetworkUsage(state, nowMs)
         }
 
         val diagnostics = status.pendingDiagnostics()
@@ -131,7 +133,7 @@ class Pipeline(context: Context) {
             dropped += spool.put(Signal.LOGS, Gzip.compress(OtlpJsonEncoder.encodeLogs(resource, scope, chunk)))
         }
         if (usageGranted) {
-            val metrics = state.metrics.export(nowMs)
+            val metrics = state.metrics.export(nowMs, mobileNetworkObserved = mobileNetworkObserved)
             dropped += spool.put(Signal.METRICS, Gzip.compress(OtlpJsonEncoder.encodeMetrics(resource, scope, metrics)))
         }
 
@@ -165,27 +167,17 @@ class Pipeline(context: Context) {
         return PersistedState.initial(nowMs, keyguardSecure)
     }
 
-    private fun collectMobileNetworkUsage(state: PersistedState, nowMs: Long) {
-        val metric = MetricNames.MOBILE_DATA_USAGE
-        val dayStartMs = MobileNetworkUsageCollector.localDayStartMs(nowMs)
-        val deviceAttributes = listOf("activity.network.scope" to "device")
-        if (state.metrics.startTimeMs(metric, deviceAttributes) != dayStartMs) {
-            state.metrics.resetCumulative(metric, dayStartMs)
-        }
-
+    private fun collectMobileNetworkUsage(state: PersistedState, nowMs: Long): Boolean {
         try {
-            val snapshot = MobileNetworkUsageCollector(ctx).queryToday(nowMs)
-            state.metrics.setCumulative(
-                metric,
-                deviceAttributes,
-                snapshot.device.total,
-                snapshot.dayStartMs,
+            val collector = MobileNetworkUsageCollector(ctx)
+            val update = MobileNetworkUsageState.collect(
+                state.mobileNetwork ?: MobileNetworkUsageState.fromLegacy(state.metrics),
                 nowMs,
+                query = collector::query,
             )
-
             val resolver = PackageAppInfoResolver(ctx)
-            for ((uid, bytes) in snapshot.byUid) {
-                if (bytes.total <= 0) continue
+            // Resolve all labels before changing counters or their source checkpoint.
+            val appAttributes = update.uidDeltas.keys.associateWith { uid ->
                 val packages = ctx.packageManager.getPackagesForUid(uid).orEmpty().sorted()
                 val (appId, appName) = when {
                     uid == NetworkStats.Bucket.UID_REMOVED -> "uid:removed" to "Removed apps"
@@ -197,24 +189,31 @@ class Pipeline(context: Context) {
                     )
                     else -> "uid:$uid" to "UID $uid"
                 }
-                val attributes = listOf(
+                listOf(
                     "activity.network.scope" to "app",
                     "activity.app.id" to appId,
                     "activity.app.name" to appName,
                     "process.uid" to uid.toString(),
                 )
-                state.metrics.setCumulative(
-                    metric,
-                    attributes,
-                    bytes.total,
-                    snapshot.dayStartMs,
-                    nowMs,
+            }
+            state.metrics.addCumulative(
+                MetricNames.MOBILE_DATA_USAGE,
+                listOf("activity.network.scope" to "device"),
+                update.deviceDelta, update.startMs, nowMs,
+            )
+            for ((uid, delta) in update.uidDeltas) {
+                state.metrics.addCumulative(
+                    MetricNames.MOBILE_DATA_USAGE, appAttributes.getValue(uid),
+                    delta, update.startMs, nowMs,
                 )
             }
+            state.mobileNetwork = update.state
+            return true
         } catch (e: Exception) {
-            // NetworkStatsManager can be unavailable or reject a query on some
-            // Android builds. Keep activity collection and export running.
             Log.w(TAG, "mobile network usage is unavailable", e)
+            status.diagnostic(Severity.WARN, "Mobile network usage unavailable: ${e.javaClass.simpleName}")
+            // No zero or stale mobile snapshots are emitted on a failed observation.
+            return false
         }
     }
 
