@@ -1,7 +1,7 @@
 {
   "title": "Android",
   "uid": "activitylog-android",
-  "description": "Phone usage from the activitylog Android app: screen time, apps, browser tabs, unlocks and location.",
+  "description": "Phone usage from the activitylog Android app: screen time, apps, mobile data, browser tabs, unlocks and location.",
   "tags": [
     "activitylog",
     "android",
@@ -303,7 +303,7 @@
       "gridPos": {
         "x": 12,
         "y": 1,
-        "w": 4,
+        "w": 3,
         "h": 4
       },
       "datasource": {
@@ -358,9 +358,9 @@
       "description": "activity.app.switch log events.",
       "id": 6,
       "gridPos": {
-        "x": 16,
+        "x": 15,
         "y": 1,
-        "w": 4,
+        "w": 3,
         "h": 4
       },
       "datasource": {
@@ -413,9 +413,9 @@
       "description": "device.location log events. 0 when location recording is off.",
       "id": 7,
       "gridPos": {
-        "x": 20,
+        "x": 18,
         "y": 1,
-        "w": 4,
+        "w": 3,
         "h": 4
       },
       "datasource": {
@@ -458,6 +458,61 @@
         "textMode": "value",
         "justifyMode": "center",
         "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Mobile data",
+      "description": "Received and sent mobile data during the selected time range. Estimated from 15-minute cumulative samples; at least two samples are required.",
+      "id": 26,
+      "gridPos": {
+        "x": 21,
+        "y": 1,
+        "w": 3,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "sum(increase(activity_network_mobile_usage_bytes_total{job=\"activitylog/activitylog-android\", instance=~\"$device\", activity_network_scope=\"device\"}[$__range]))",
+          "legendFormat": "Mobile data",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decbytes",
+          "min": 0,
+          "decimals": 1,
+          "noValue": "No samples"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "value",
         "wideLayout": true,
         "showPercentChange": false
       }
@@ -1326,15 +1381,15 @@
       "panels": []
     },
     {
-      "type": "stat",
-      "title": "Mobile data today",
-      "description": "Total received and sent mobile data reported by Android since the device's local midnight.",
-      "id": 26,
+      "type": "bargauge",
+      "title": "Top apps by mobile data",
+      "description": "Top 15 apps / UIDs by received and sent mobile data during the selected time range. Shared UIDs are combined; system and unmapped UIDs appear separately. Requires at least two samples per series.",
+      "id": 27,
       "gridPos": {
         "x": 0,
         "y": 76,
-        "w": 8,
-        "h": 8
+        "w": 24,
+        "h": 12
       },
       "datasource": {
         "type": "prometheus",
@@ -1348,62 +1403,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sum(activity_network_mobile_usage_bytes_total{job=\"activitylog/activitylog-android\", instance=~\"$device\", activity_network_scope=\"device\"})",
-          "legendFormat": "Mobile data",
-          "range": false,
-          "instant": true
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "decbytes",
-          "min": 0,
-          "decimals": 1,
-          "noValue": "0"
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "textMode": "value",
-        "wideLayout": true,
-        "showPercentChange": false
-      }
-    },
-    {
-      "type": "bargauge",
-      "title": "Mobile data by app / UID today",
-      "description": "Approximate received and sent mobile data since the device's local midnight. Shared UIDs are grouped; system, tethering, and unmapped UIDs are shown separately.",
-      "id": 27,
-      "gridPos": {
-        "x": 8,
-        "y": 76,
-        "w": 16,
-        "h": 8
-      },
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${prom}"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${prom}"
-          },
-          "refId": "A",
-          "editorMode": "code",
-          "expr": "sort_desc(topk(15, sum by (activity_app_id, activity_app_name) (activity_network_mobile_usage_bytes_total{job=\"activitylog/activitylog-android\", instance=~\"$device\", activity_network_scope=\"app\"} > 0)))",
+          "expr": "sort_desc(topk(15, sum by (activity_app_id, activity_app_name) (increase(activity_network_mobile_usage_bytes_total{job=\"activitylog/activitylog-android\", instance=~\"$device\", activity_network_scope=\"app\"}[$__range])) > 0))",
           "legendFormat": "{{activity_app_name}}",
           "range": false,
           "instant": true
@@ -1415,7 +1415,8 @@
           "min": 0,
           "color": {
             "mode": "continuous-BlPu"
-          }
+          },
+          "noValue": "No samples"
         },
         "overrides": []
       },

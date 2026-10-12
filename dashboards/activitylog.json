@@ -1556,8 +1556,8 @@
     {
       "type": "stat",
       "id": 29,
-      "title": "Mobile data today",
-      "description": "Android device total, received and sent, since the device's local midnight.",
+      "title": "Mobile data",
+      "description": "Android received and sent mobile data during the selected time range. Estimated from 15-minute samples; requires at least two samples.",
       "gridPos": {
         "h": 8,
         "w": 8,
@@ -1576,7 +1576,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sum(activity_network_mobile_usage_bytes_total{job=\"activitylog/activitylog-android\", instance=~\"${instance:pipe}\", activity_network_scope=\"device\"})",
+          "expr": "sum(increase(activity_network_mobile_usage_bytes_total{job=\"activitylog/activitylog-android\", instance=~\"${instance:pipe}\", activity_network_scope=\"device\"}[$__range]))",
           "legendFormat": "Mobile data",
           "range": false,
           "instant": true
@@ -1587,7 +1587,7 @@
           "unit": "decbytes",
           "min": 0,
           "decimals": 1,
-          "noValue": "0"
+          "noValue": "No samples"
         },
         "overrides": []
       },
@@ -1611,8 +1611,8 @@
     {
       "type": "bargauge",
       "id": 30,
-      "title": "Mobile data by app / UID today",
-      "description": "Approximate Android usage. Shared UIDs are combined; system, tethering, and unmapped UIDs appear separately. The instance label identifies the device.",
+      "title": "Top apps by mobile data",
+      "description": "Android apps / UIDs ranked by received and sent mobile data during the selected time range. Shared UIDs are combined. Requires at least two samples per series.",
       "gridPos": {
         "h": 8,
         "w": 16,
@@ -1631,7 +1631,7 @@
           },
           "refId": "A",
           "editorMode": "code",
-          "expr": "sort_desc(topk(15, sum by (instance, activity_app_id, activity_app_name) (activity_network_mobile_usage_bytes_total{job=\"activitylog/activitylog-android\", instance=~\"${instance:pipe}\", activity_network_scope=\"app\"} > 0)))",
+          "expr": "sort_desc(topk(15, sum by (instance, activity_app_id, activity_app_name) (increase(activity_network_mobile_usage_bytes_total{job=\"activitylog/activitylog-android\", instance=~\"${instance:pipe}\", activity_network_scope=\"app\"}[$__range])) > 0))",
           "legendFormat": "{{instance}} / {{activity_app_name}}",
           "range": false,
           "instant": true
@@ -1643,7 +1643,8 @@
           "min": 0,
           "color": {
             "mode": "continuous-BlPu"
-          }
+          },
+          "noValue": "No samples"
         },
         "overrides": []
       },
@@ -1747,6 +1748,6 @@
   "timezone": "browser",
   "title": "activitylog",
   "uid": "activitylog-overview",
-  "version": 2,
+  "version": 3,
   "weekStart": ""
 }
