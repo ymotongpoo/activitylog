@@ -66,7 +66,7 @@ class NetworkDataDashboardTest(unittest.TestCase):
                 for duration, device, expected in [('24h', 'phone-a', 960), ('1h', 'phone-a', 40), ('24h', '.*', 10560)]:
                     checks.append({'expr': query(total, duration, device), 'eval_time': '48h7m',
                                    'exp_samples': [{'labels': '{}', 'value': expected * scale}]})
-                labels = 'instance="phone-a",' if filename == 'activitylog.json' else ''
+                labels = 'instance="phone-a",'
                 checks.append({'expr': query(ranking), 'eval_time': '48h7m', 'exp_samples': [
                     {'labels': '{' + labels + 'activity_app_id="a",activity_app_name="App A"}', 'value': 576 * scale},
                     {'labels': '{' + labels + 'activity_app_id="b",activity_app_name="App B"}', 'value': 384 * scale},
