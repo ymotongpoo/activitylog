@@ -127,6 +127,9 @@ class MainActivity : Activity() {
             open(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:$packageName".toUri()))
         }
         findViewById<Button>(R.id.open_location).setOnClickListener { requestLocationPermission() }
+        findViewById<Button>(R.id.manage_categories).setOnClickListener {
+            startActivity(Intent(this, CategoriesActivity::class.java))
+        }
         locationInterval.setOnCheckedChangeListener { _, _ -> saveSettings() }
         locationEnabled.setOnCheckedChangeListener { _, checked ->
             saveSettings()

@@ -62,4 +62,25 @@
     <string name="never">never</string>
     <string name="status_text">Device name: %1$s\nLast run: %2$s\n%3$s\nLast send: %4$s\n%5$s\nQueued payloads: %6$d (%7$d KiB)</string>
     <string name="diagnostics_header">Recent diagnostics:</string>
+    <string name="section_categories">App categories</string>
+    <string name="categories_help">Tap an app to assign a category. Recently used apps appear first. Changes apply from the next collection; past data stays unchanged.</string>
+    <string name="categories_back">Back to settings</string>
+    <string name="categories_manage">Manage categories</string>
+    <string name="category_new">New category</string>
+    <string name="category_rename">Rename</string>
+    <string name="category_delete">Delete</string>
+    <string name="category_name_hint">e.g. Work/Development or Learning</string>
+    <string name="category_search">Search apps by name or package</string>
+    <string name="category_unclassified">Uncategorized only</string>
+    <string name="category_loading">Loading apps…</string>
+    <string name="category_load_failed">Could not load apps. Reopen this screen to retry.</string>
+    <string name="category_no_apps">No matching apps</string>
+    <string name="category_app_count">%1$d apps</string>
+    <string name="category_manual">Assigned</string>
+    <string name="category_android">Android default</string>
+    <string name="category_app_detail">%1$s · %2$s\n%3$s</string>
+    <string name="category_automatic">Use Android category (%1$s)</string>
+    <string name="category_with_count">%1$s (%2$d apps)</string>
+    <string name="category_delete_title">Delete %1$s?</string>
+    <string name="category_delete_message">Assigned apps will use their Android categories again. Past data stays unchanged.</string>
 </resources>

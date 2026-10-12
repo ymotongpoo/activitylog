@@ -65,6 +65,15 @@
 
         <TextView
             style="@style/SectionTitle"
+            android:text="@string/section_categories" />
+
+        <Button
+            android:id="@+id/manage_categories"
+            style="@style/WideButton"
+            android:text="@string/categories_manage" />
+
+        <TextView
+            style="@style/SectionTitle"
             android:text="@string/section_privacy" />
 
         <TextView
