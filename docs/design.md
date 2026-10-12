@@ -118,7 +118,7 @@ trace (1 セッション)
 
 ### Metrics
 
-メトリクスは cumulative の Counter。時間は単位 `s`、Android のモバイル通信量は `By`、コマンド回数は単位なし。デスクトップは 60 秒ごと、Android は 15 分ごとに送る。Android のモバイル通信量は端末のローカル日付ごとに値と開始時刻をリセットする。
+メトリクスは cumulative の Counter。時間は単位 `s`、Android のモバイル通信量は `By`、コマンド回数は単位なし。デスクトップは 60 秒ごと、Android は 15 分ごとに送る。Android のモバイル通信量も値と開始時刻を日付変更時にリセットしない。
 時間は確定した分だけ加算する。AFK かどうか確定していない時間（最後の入力から現在まで）は、確定した時点でどちらかに加算する。
 
 | OTel 名 | Prometheus 名 | 属性 |
@@ -132,7 +132,7 @@ trace (1 セッション)
 | `activity.terminal.commands` | `activity_terminal_commands_total` | `activity.terminal.command.name`, `activity.terminal.command.status`（`ok` / `error`） |
 | `activity.device.unlocks` | `activity_device_unlocks_total` | なし（Android のみ） |
 
-Mimir 側ではデスクトップの `job="activitylog/activitylog-agent"`、Android の `job="activitylog/activitylog-android"`、`instance=<service.instance.id>` になる。Android のモバイルデータ通信量は端末のローカル日付でリセットする累積値で、NetworkStatsManager のバケット粒度による概算。
+Mimir 側ではデスクトップの `job="activitylog/activitylog-agent"`、Android の `job="activitylog/activitylog-android"`、`instance=<service.instance.id>` になる。Android のモバイルデータ通信量は NetworkStatsManager の取得値から増分を加算する。日付変更後は前回の集計開始から新しい日付の境界までを再取得して未加算分を回収し、当日分を加算する。元の取得値は UID 単位で永続化し、アプリ名変更でも全量を再加算しない。取得失敗時は通信量メトリクスを省略する。ダッシュボードは `increase` で選択期間を集計する。OS の履歴粒度と反映遅延、観測間隔、Prometheus の期間端点への外挿による概算である。
 
 ### Logs
 
