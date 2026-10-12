@@ -11,9 +11,9 @@ Play ストアには出さず、サイドロードで使う。
   - app スパン: `ACTIVITY_RESUMED` のパッケージごと。別パッケージの `ACTIVITY_RESUMED` か root の終了まで。
   - `browser.tab` スパン: ユーザー補助サービスが記録したアドレスバーの文字列のうち、ブラウザの app スパンに入るもの。ドメイン、プライバシー設定に従った URL、ブラウザー名を記録し、ページタイトルは取得しない。[android.json](../dashboards/android.json) の「Top domains」と「Recent tabs」に表示する。
   - 実行の終わりにまだ閉じていない区間は、トレース ID・スパン ID・開始時刻ごと端末に保存して次回に引き継ぐ。途中で送ることはしない。
-- メトリクス（`activity.time`、`activity.app.time`、`activity.category.time`、`activity.browser.domain.time`、`activity.network.mobile.usage`、`activity.device.unlocks`）は cumulative の Sum。合計値と開始時刻を端末に保存するので、プロセスが殺されても値は増え続ける。開いている区間は「どこまで加算したか」を覚えておき、二重に数えない。モバイル通信量も日付をまたいで積算を続ける。
-- モバイルデータ通信量は Android の `NetworkStatsManager` から取得する。端末全体と UID（通常はアプリ）ごとの受信・送信合計を前回の取得値と比較し、増分を cumulative メトリクスに加算する。収集は WorkManager の 15 分周期で、日付変更後は前回の集計開始から新しい日付の境界までの実績も読み、最後の収集後の通信量を加算する。取得値と送信用の累積値を一緒に保存するので、再起動や旧版からの更新でも二重加算しない。取得失敗時は通信量のサンプルを送らず、診断ログを残す。
-- ダッシュボード上部の「Mobile data」は選択期間の端末合計、下部の「Top apps by mobile data」は同期間のアプリ別上位 15 件を表示する。値は Android の履歴集計と Prometheus の増分推定による概算。共有 UID はまとめ、システムやテザリングなどの UID も表示する。端末合計と UID 別合計は一致しない場合がある。OS の履歴反映の遅れや収集停止中の通信は、後の観測に反映されるため、厳密な 15 分区間ごとの実測ではない。
+- メトリクス（`activity.time`、`activity.app.time`、`activity.category.time`、`activity.browser.domain.time`、`activity.network.mobile.usage`、`activity.network.wifi.usage`、`activity.device.unlocks`）は cumulative の Sum。合計値と開始時刻を端末に保存するので、プロセスが殺されても値は増え続ける。開いている区間は「どこまで加算したか」を覚えておき、二重に数えない。モバイル通信量と Wi-Fi 通信量も日付をまたいで積算を続ける。
+- モバイル通信量と Wi-Fi 通信量は Android の [`NetworkStatsManager`](https://developer.android.com/reference/android/app/usage/NetworkStatsManager) から回線種別ごとに取得する。端末全体と UID（通常はアプリ）ごとの受信・送信合計を前回の取得値と比較し、増分を cumulative メトリクスに加算する。収集は WorkManager の 15 分周期で、日付変更後は前回の集計開始から新しい日付の境界までの実績も読み、最後の収集後の通信量を加算する。取得値と送信用の累積値を一緒に保存するので、再起動や旧版からの更新でも二重加算しない。取得失敗時は該当する回線種別のサンプルを送らず、診断ログを残す。もう一方の回線種別は独立して収集する。
+- ダッシュボード上部の「Mobile data」は選択期間の端末合計、下部の「Top apps by mobile data」は同期間のアプリ別上位 15 件を表示する。Wi-Fi も「Wi-Fi data」と「Top apps by Wi-Fi data」で同様に表示する。Wi-Fi は接続先ごとに分けず、すべての Wi-Fi 接続の合計を集計する。値は Android の履歴集計と Prometheus の増分推定による概算。共有 UID はまとめ、システムやテザリングなどの UID も表示する。端末合計と UID 別合計は一致しない場合がある。OS の履歴反映の遅れや収集停止中の通信は、後の観測に反映されるため、厳密な 15 分区間ごとの実測ではない。
 - ログは `activity.device.screen`（画面オン/オフ、ロック、ロック解除）、`activity.app.switch`、`agent.start`、`agent.permission`、`agent.diagnostic`。
 - 送るデータはいったんアプリ内の退避領域（上限 32 MiB、超えたら古いものから捨てる）に書き、古い順に送る。ネットワークエラー、429、5xx のときは残して次回に再送する。ネットワークが戻った時点で送るよう、接続を条件にした再送ジョブも登録する。それ以外の 4xx は捨て、ステータスと応答本文を設定画面の診断欄に出す。
 - 収集自体はネットワークを必要としない。オフラインの間も 15 分ごとに収集して退避領域にためる。

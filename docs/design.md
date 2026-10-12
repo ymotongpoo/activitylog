@@ -118,7 +118,7 @@ trace (1 セッション)
 
 ### Metrics
 
-メトリクスは cumulative の Counter。時間は単位 `s`、Android のモバイル通信量は `By`、コマンド回数は単位なし。デスクトップは 60 秒ごと、Android は 15 分ごとに送る。Android のモバイル通信量も値と開始時刻を日付変更時にリセットしない。
+メトリクスは cumulative の Counter です。時間は単位 `s`、Android のモバイル通信量と Wi-Fi 通信量は `By`、コマンド回数に単位はありません。デスクトップは 60 秒ごと、Android は 15 分ごとに送ります。Android のモバイル通信量と Wi-Fi 通信量も値と開始時刻を日付変更時にリセットしません。
 時間は確定した分だけ加算する。AFK かどうか確定していない時間（最後の入力から現在まで）は、確定した時点でどちらかに加算する。
 
 | OTel 名 | Prometheus 名 | 属性 |
@@ -128,11 +128,12 @@ trace (1 セッション)
 | `activity.category.time` | `activity_category_time_seconds_total` | `activity.category` |
 | `activity.browser.domain.time` | `activity_browser_domain_time_seconds_total` | `url.domain`（設定で無効化できる） |
 | `activity.network.mobile.usage` | `activity_network_mobile_usage_bytes_total` | `activity.network.scope`（`device` / `app`）。アプリ別は `activity.app.name`, `activity.app.id`, `process.uid` を持つ Android UID 別。端末合計と UID 別の合計は一致しない場合がある |
+| `activity.network.wifi.usage` | `activity_network_wifi_usage_bytes_total` | `activity.network.scope`（`device` / `app`）。アプリ別は `activity.app.name`, `activity.app.id`, `process.uid` を持つ Android UID 別。端末合計と UID 別の合計は一致しない場合がある |
 | `activity.editor.project.time` | `activity_editor_project_time_seconds_total` | `activity.editor.project`, `activity.editor.language` |
 | `activity.terminal.commands` | `activity_terminal_commands_total` | `activity.terminal.command.name`, `activity.terminal.command.status`（`ok` / `error`） |
 | `activity.device.unlocks` | `activity_device_unlocks_total` | なし（Android のみ） |
 
-Mimir 側ではデスクトップの `job="activitylog/activitylog-agent"`、Android の `job="activitylog/activitylog-android"`、`instance=<service.instance.id>` になる。Android のモバイルデータ通信量は NetworkStatsManager の取得値から増分を加算する。日付変更後は前回の集計開始から新しい日付の境界までを再取得して未加算分を回収し、当日分を加算する。元の取得値は UID 単位で永続化し、アプリ名変更でも全量を再加算しない。取得失敗時は通信量メトリクスを省略する。ダッシュボードは `increase` で選択期間を集計する。OS の履歴粒度と反映遅延、観測間隔、Prometheus の期間端点への外挿による概算である。
+Mimir 側ではデスクトップの `job="activitylog/activitylog-agent"`、Android の `job="activitylog/activitylog-android"`、`instance=<service.instance.id>` になります。Android のモバイル通信量と Wi-Fi 通信量は NetworkStatsManager の取得値から回線種別ごとに増分を加算します。Wi-Fi はすべての接続先の合計です。日付変更後は前回の集計開始から新しい日付の境界までを再取得して未加算分を回収し、当日分を加算します。元の取得値は UID 単位で永続化し、アプリ名変更でも全量を再加算しません。取得失敗時は該当する回線種別の通信量メトリクスを省略します。ダッシュボードは `increase` で選択期間を集計します。OS の履歴粒度と反映遅延、観測間隔、Prometheus の期間端点への外挿による概算です。
 
 ### Logs
 
