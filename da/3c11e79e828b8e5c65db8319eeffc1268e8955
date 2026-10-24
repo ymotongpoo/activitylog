@@ -1,0 +1,23 @@
+.github/workflows/apt.yml
+  s_b87970ad20b667::t_27aa8066c66d7e 4-5,9-10,43-46,89-92,95,97-101
+agent/packaging/linux/download-collector-packages.sh
+  s_b87970ad20b667::t_27aa8066c66d7e 1-35
+agent/packaging/linux/build-apt-repo.sh
+  s_b87970ad20b667::t_27aa8066c66d7e 8,40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "da3c11e79e828b8e5c65db8319eeffc1268e8955",
+  "prompts": {},
+  "sessions": {
+    "s_b87970ad20b667": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16634-ce17-7700-b4ba-1c78eac1aec5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Yoshi Yamaguchi <ymotongpoo@gmail.com>"
+    }
+  }
+}
