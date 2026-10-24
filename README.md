@@ -133,6 +133,10 @@ macOS はアドホック署名のバイナリをハッシュで識別するの�
 
 Debian と Ubuntu 向けに、apt リポジトリ（amd64、arm64）を GitHub Pages で公開しています。
 
+同じaptリポジトリから、DiscordのメトリクスをローカルのAlloyへ送る `discord-otelcol` も配布しています。
+`sudo apt install discord-otelcol` でインストールできます。
+設定と起動の手順は[専用Collectorのドキュメント](https://github.com/ymotongpoo/opentelemetry-collector-extra/tree/main/distributions/discord)を参照してください。
+
 ```sh
 sudo curl -fsSL https://ymotongpoo.github.io/activitylog/apt/activitylog.gpg \
   -o /usr/share/keyrings/activitylog.gpg

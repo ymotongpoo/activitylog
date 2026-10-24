@@ -7,13 +7,20 @@
 </head>
 <body>
 <h1>activitylog apt repository</h1>
-<p>Debian and Ubuntu packages of <a href="https://github.com/ymotongpoo/activitylog">activitylog-agent</a> for amd64 and arm64.</p>
+<p>Debian and Ubuntu packages for amd64 and arm64:</p>
+<ul>
+<li><a href="https://github.com/ymotongpoo/activitylog">activitylog-agent</a>: desktop and terminal activity collection.</li>
+<li><a href="https://github.com/ymotongpoo/opentelemetry-collector-extra/tree/main/distributions/discord">discord-otelcol</a>: Discord metrics forwarded to a local Grafana Alloy instance over OTLP.</li>
+</ul>
 <pre>sudo curl -fsSL https://ymotongpoo.github.io/activitylog/apt/activitylog.gpg \
   -o /usr/share/keyrings/activitylog.gpg
 echo "deb [signed-by=/usr/share/keyrings/activitylog.gpg] https://ymotongpoo.github.io/activitylog/apt stable main" \
   | sudo tee /etc/apt/sources.list.d/activitylog.list
 sudo apt update
 sudo apt install activitylog-agent</pre>
+<p>To install the Discord Collector instead, run <code>sudo apt install discord-otelcol</code>.
+Set the bot token in <code>/etc/discord-otelcol/environment</code>, then run
+<code>sudo systemctl enable --now discord-otelcol</code>. A fresh installation does not start the service.</p>
 <p>Signing key: <a href="apt/activitylog.asc">apt/activitylog.asc</a></p>
 </body>
 </html>
