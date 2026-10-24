@@ -5,6 +5,7 @@
 #
 # Layout (suite and codename "stable", component "main"):
 #   <dir>/pool/main/a/activitylog-agent/*.deb
+#   <dir>/pool/main/d/discord-otelcol/*.deb
 #   <dir>/dists/stable/{Release,Release.gpg,InRelease}
 #   <dir>/dists/stable/main/binary-{amd64,arm64}/Packages{,.gz}
 #   <dir>/activitylog.gpg (binary keyring) and activitylog.asc
@@ -36,7 +37,7 @@ apt-ftparchive \
 	-o APT::FTPArchive::Release::Codename=stable \
 	-o "APT::FTPArchive::Release::Architectures=amd64 arm64" \
 	-o APT::FTPArchive::Release::Components=main \
-	-o "APT::FTPArchive::Release::Description=activitylog packages" \
+	-o "APT::FTPArchive::Release::Description=activitylog and Discord Collector packages" \
 	release dists/stable > Release.tmp
 mv Release.tmp dists/stable/Release
 
