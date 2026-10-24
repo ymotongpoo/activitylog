@@ -1,0 +1,28 @@
+agent/packaging/linux/test-download-collector-packages.py
+  s_e8e040ab098906::t_a031eac035183b 52,56,98-104
+  s_e8e040ab098906::t_b817a352defd5e 25,28,30,33,35-37,41-42,48,72,75-86,89-90,96-97
+agent/packaging/linux/download-collector-packages.sh
+  s_e8e040ab098906::t_b817a352defd5e 2,12,16-17,20,22-23,26,28-30,32,45-46
+.github/workflows/apt.yml
+  s_e8e040ab098906::t_b817a352defd5e 100,105,107,118-120
+  s_e8e040ab098906::t_e5b0a3d305af8f 50-56
+  s_e8e040ab098906::t_a031eac035183b 108-117
+agent/packaging/linux/build-apt-repo.sh
+  s_e8e040ab098906::t_9ae01a605ed47f 30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "52e9e670e192c6075b1873dfb806a5c9dfd8a885",
+  "prompts": {},
+  "sessions": {
+    "s_e8e040ab098906": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16cc5-e396-76e1-84b8-83e572917b16",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Yoshi Yamaguchi <ymotongpoo@gmail.com>"
+    }
+  }
+}
