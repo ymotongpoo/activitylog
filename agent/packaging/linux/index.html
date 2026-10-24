@@ -18,8 +18,9 @@ echo "deb [signed-by=/usr/share/keyrings/activitylog.gpg] https://ymotongpoo.git
   | sudo tee /etc/apt/sources.list.d/activitylog.list
 sudo apt update
 sudo apt install activitylog-agent</pre>
-<p>After its release is published, install the combined Collector with <code>sudo apt install otelcol-extra</code>.
-The <code>discord-otelcol</code> transitional package upgrades existing installations.</p>
+<p>Install the combined Collector with <code>sudo apt install otelcol-extra</code>.
+Only <code>otelcol-extra</code> is distributed here. On an already migrated installation, remove the retired transitional package with
+<code>sudo apt install otelcol-extra discord-otelcol-</code>; the combined Collector's configuration and credentials are retained.</p>
 <p>Register credentials with <code>sudo otelcol-extra-set-credentials discord</code> or
 <code>sudo otelcol-extra-set-credentials switchbot</code>, then copy the required snippets from
 <code>/usr/share/otelcol-extra/examples/</code> to <code>/etc/otelcol-extra/conf.d/</code>.

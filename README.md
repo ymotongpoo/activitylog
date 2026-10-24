@@ -134,8 +134,10 @@ macOS はアドホック署名のバイナリをハッシュで識別するの�
 Debian と Ubuntu 向けに、apt リポジトリ（amd64、arm64）を GitHub Pages で公開しています。
 
 同じaptリポジトリは、Discord・Slack・SwitchBotなどのコンポーネントを含む `otelcol-extra` のパッケージにも対応しています。
-対応するリリースの公開後は `sudo apt install otelcol-extra` でインストールできます。
-既存の `discord-otelcol` は移行用パッケージ経由で更新されます。
+`sudo apt install otelcol-extra` でインストールできます。
+Collectorは `otelcol-extra` だけを配布し、旧名の `discord-otelcol` はAPTの掲載対象から外しています。
+移行済み環境に旧名の移行用パッケージが残っている場合は、`sudo apt install otelcol-extra discord-otelcol-` で取り除けます。
+過去のGitHubリリースは履歴として残します。
 設定・認証情報の登録・移行の手順は[Collectorのドキュメント](https://github.com/ymotongpoo/opentelemetry-collector-extra/tree/main/distributions/extra)を参照してください。
 
 ```sh
