@@ -1,5 +1,5 @@
 #!/bin/sh
-# Import verified current and legacy Collector releases into the shared APT pool.
+# Import only verified otelcol-extra packages into the shared APT pool.
 set -eu
 pool="${1:?usage: download-collector-packages.sh POOL}"
 repository=ymotongpoo/opentelemetry-collector-extra
@@ -9,31 +9,27 @@ mkdir -p "$pool"
 pool="$(realpath "$pool")"
 
 gh release list --repo "$repository" --limit 100 --exclude-drafts --exclude-pre-releases \
-    --json tagName --jq '[.[] | select(.tagName | startswith("otelcol-extra/v"))][:3] + [.[] | select(.tagName | startswith("discord-otelcol/v"))][:3] | .[].tagName' > "$work/tags"
+    --json tagName --jq '[.[] | select(.tagName | startswith("otelcol-extra/v"))][:3] | .[].tagName' > "$work/tags"
 test -s "$work/tags"
 while IFS= read -r tag; do
     case "$tag" in
-        otelcol-extra/v*) name=otelcol-extra; version="${tag#otelcol-extra/v}" ;;
-        discord-otelcol/v*) name=discord-otelcol; version="${tag#discord-otelcol/v}" ;;
-        *) exit 1 ;;
+        otelcol-extra/v*) version="${tag#otelcol-extra/v}" ;;
+        *) continue ;;
     esac
     printf '%s\n' "$version" | LC_ALL=C grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'
-    download="$work/$name-$version"
+    download="$work/otelcol-extra-$version"
     mkdir "$download"
-    if [ "$name" = otelcol-extra ]; then
-        gh release download "$tag" --repo "$repository" --pattern 'otelcol-extra_*.deb' \
-            --pattern 'discord-otelcol_*_all.deb' --pattern SHA256SUMS --dir "$download"
-    else
-        gh release download "$tag" --repo "$repository" --pattern 'discord-otelcol_*.deb' --pattern SHA256SUMS --dir "$download"
-    fi
+    gh release download "$tag" --repo "$repository" --pattern 'otelcol-extra_*.deb' \
+        --pattern SHA256SUMS --dir "$download"
     (
         cd "$download"
-        printf '%s\n' "${name}_${version}_amd64.deb" "${name}_${version}_arm64.deb" > expected
-        if [ "$name" = otelcol-extra ]; then printf '%s\n' "discord-otelcol_${version}_all.deb" >> expected; fi
+        printf '%s\n' "otelcol-extra_${version}_amd64.deb" "otelcol-extra_${version}_arm64.deb" > expected
         sort -o expected expected
-        awk '{print $2}' SHA256SUMS | sort > actual
+        # Historical releases also list a transitional package. Never fetch or index it.
+        awk '$2 ~ /^otelcol-extra_/ {print}' SHA256SUMS > selected-checksums
+        awk '{print $2}' selected-checksums | sort > actual
         diff -u expected actual
-        sha256sum --check --strict SHA256SUMS
+        sha256sum --check --strict selected-checksums
         # Validate every package before copying any of this release into the pool.
         while IFS= read -r package; do
             base="${package%.deb}"
@@ -46,3 +42,5 @@ while IFS= read -r tag; do
         while IFS= read -r package; do cp "$package" "$pool/$package"; done < expected
     )
 done < "$work/tags"
+# A reused pool must not carry old package names into the next signed index.
+find "$pool" -maxdepth 1 -type f -name 'discord-otelcol_*.deb' -delete

@@ -47,7 +47,13 @@ jobs:
       - name: Download verified Collector packages
         env:
           GH_TOKEN: ${{ github.token }}
-        run: sh agent/packaging/linux/download-collector-packages.sh site/apt/pool/main/o/otelcol-extra
+        run: |
+          set -eu
+          sh agent/packaging/linux/download-collector-packages.sh site/apt/pool/main/o/otelcol-extra
+          if find site/apt/pool -name 'discord-otelcol_*.deb' -print -quit | grep -q .; then
+            echo 'Retired Collector package found in the publication pool' >&2
+            exit 1
+          fi
       - name: Build and sign the repository
         env:
           APT_SIGNING_KEY: ${{ secrets.APT_SIGNING_KEY }}
@@ -91,39 +97,27 @@ jobs:
             > /etc/apt/sources.list.d/activitylog.list
           for i in 1 2 3 4 5 6; do
             if apt-get update -qq && apt-cache show activitylog-agent >/dev/null 2>&1 && \
-                apt-cache show discord-otelcol >/dev/null 2>&1; then
+                apt-cache show otelcol-extra >/dev/null 2>&1; then
               break
             fi
             sleep 20
           done
-          apt-get install -y activitylog-agent discord-otelcol
+          apt-get install -y activitylog-agent otelcol-extra
           activitylog-agent version
-          if command -v otelcol-extra >/dev/null; then
-            otelcol-extra --version
-            printf '%s' 'apt-verification-fixture' | otelcol-extra-set-credentials discord --stdin --with-key=host
-            mkdir -m 0700 /run/collector-apt-credentials
-            systemd-creds decrypt --name=discord_bot_token /etc/credstore.encrypted/otelcol-extra.discord /run/collector-apt-credentials/discord_bot_token
-            CREDENTIALS_DIRECTORY=/run/collector-apt-credentials otelcol-extra validate --config=/etc/otelcol-extra/config.yaml \
-              --config=/usr/share/otelcol-extra/examples/discord.yaml
-            test "$(stat -c '%a:%U:%G' /etc/credstore.encrypted/otelcol-extra.discord)" = 600:root:root
-            otelcol-extra components > components.txt
-            for component in discord slack switchbot s3tables otlp_http; do grep -q "name: $component" components.txt; done
-            test -f /usr/lib/systemd/system/otelcol-extra.service
-            test ! -e /etc/systemd/system/multi-user.target.wants/otelcol-extra.service
-          else
-            # Keep verification working until the first renamed release exists.
-            discord-otelcol --version
-            if command -v discord-otelcol-set-token >/dev/null; then
-              printf '%s' 'apt-verification-fixture' | discord-otelcol-set-token --stdin --with-key=host
-              mkdir -m 0700 /run/discord-apt-credentials
-              systemd-creds decrypt --name=discord_bot_token /etc/credstore.encrypted/discord-otelcol.token /run/discord-apt-credentials/discord_bot_token
-              CREDENTIALS_DIRECTORY=/run/discord-apt-credentials discord-otelcol validate --config=/etc/discord-otelcol/config.yaml
-            else
-              DISCORD_BOT_TOKEN=test discord-otelcol validate --config=/etc/discord-otelcol/config.yaml
-            fi
-            test -f /usr/lib/systemd/system/discord-otelcol.service
-            test ! -e /etc/systemd/system/multi-user.target.wants/discord-otelcol.service
-          fi
+          otelcol-extra --version
+          printf '%s' 'apt-verification-fixture' | otelcol-extra-set-credentials discord --stdin --with-key=host
+          mkdir -m 0700 /run/collector-apt-credentials
+          systemd-creds decrypt --name=discord_bot_token /etc/credstore.encrypted/otelcol-extra.discord /run/collector-apt-credentials/discord_bot_token
+          CREDENTIALS_DIRECTORY=/run/collector-apt-credentials otelcol-extra validate --config=/etc/otelcol-extra/config.yaml \
+            --config=/usr/share/otelcol-extra/examples/discord.yaml
+          test "$(stat -c '%a:%U:%G' /etc/credstore.encrypted/otelcol-extra.discord)" = 600:root:root
+          otelcol-extra components > components.txt
+          for component in discord slack switchbot s3tables otlp_http; do grep -q "name: $component" components.txt; done
+          test -f /usr/lib/systemd/system/otelcol-extra.service
+          test ! -e /etc/systemd/system/multi-user.target.wants/otelcol-extra.service
+          if apt-cache show discord-otelcol >/dev/null 2>&1; then exit 1; fi
+          test ! -e /usr/bin/discord-otelcol
+          test ! -e /usr/lib/systemd/system/discord-otelcol.service
           test -f /usr/lib/systemd/user/activitylog-agent.service
           test -f /usr/share/gnome-shell/extensions/activitylog@ymotongpoo.net/metadata.json
           # Without a window system the agent falls back to terminal mode.
