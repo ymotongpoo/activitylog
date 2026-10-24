@@ -27,7 +27,7 @@ apt-ftparchive packages pool > "$GNUPGHOME/Packages"
 for arch in amd64 arm64; do
 	dir="dists/stable/main/binary-$arch"
 	mkdir -p "$dir"
-	# --arch excludes Architecture: all; transitional packages need both indexes.
+	# --arch excludes Architecture: all; independent packages need both indexes.
 	awk -v arch="$arch" '
 		BEGIN { RS=""; ORS="\n\n" }
 		{ record="\n" $0 "\n" }
