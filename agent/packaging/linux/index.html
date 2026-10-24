@@ -10,7 +10,7 @@
 <p>Debian and Ubuntu packages for amd64 and arm64:</p>
 <ul>
 <li><a href="https://github.com/ymotongpoo/activitylog">activitylog-agent</a>: desktop and terminal activity collection.</li>
-<li><a href="https://github.com/ymotongpoo/opentelemetry-collector-extra/tree/main/distributions/discord">discord-otelcol</a>: Discord metrics forwarded to a local Grafana Alloy instance over OTLP.</li>
+<li><a href="https://github.com/ymotongpoo/opentelemetry-collector-extra/tree/main/distributions/extra">otelcol-extra</a>: Discord, Slack, and SwitchBot components with metrics forwarded to a local Grafana Alloy instance over OTLP.</li>
 </ul>
 <pre>sudo curl -fsSL https://ymotongpoo.github.io/activitylog/apt/activitylog.gpg \
   -o /usr/share/keyrings/activitylog.gpg
@@ -18,10 +18,15 @@ echo "deb [signed-by=/usr/share/keyrings/activitylog.gpg] https://ymotongpoo.git
   | sudo tee /etc/apt/sources.list.d/activitylog.list
 sudo apt update
 sudo apt install activitylog-agent</pre>
-<p>To install the Discord Collector instead, run <code>sudo apt install discord-otelcol</code>.
-Store the bot token with <code>sudo discord-otelcol-set-token</code>, then run
-<code>sudo systemctl enable --now discord-otelcol</code>. A fresh installation does not start the service.</p>
-<p>The token is stored as an encrypted systemd credential and is decrypted when the service starts.</p>
+<p>After its release is published, install the combined Collector with <code>sudo apt install otelcol-extra</code>.
+The <code>discord-otelcol</code> transitional package upgrades existing installations.</p>
+<p>Register credentials with <code>sudo otelcol-extra-set-credentials discord</code> or
+<code>sudo otelcol-extra-set-credentials switchbot</code>, then copy the required snippets from
+<code>/usr/share/otelcol-extra/examples/</code> to <code>/etc/otelcol-extra/conf.d/</code>.
+Run <code>sudo systemctl daemon-reload</code> and <code>sudo systemctl enable --now otelcol-extra</code>.
+A fresh installation does not start the service. Only configured components need credentials.</p>
+<p>Credentials are stored encrypted and decrypted by systemd when the service starts.
+See the <a href="https://github.com/ymotongpoo/opentelemetry-collector-extra/tree/main/distributions/extra">Collector installation and migration instructions</a>.</p>
 <p>Signing key: <a href="apt/activitylog.asc">apt/activitylog.asc</a></p>
 </body>
 </html>
