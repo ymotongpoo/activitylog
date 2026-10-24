@@ -95,9 +95,17 @@ jobs:
           apt-get install -y activitylog-agent discord-otelcol
           activitylog-agent version
           discord-otelcol --version
-          DISCORD_BOT_TOKEN=test discord-otelcol validate --config=/etc/discord-otelcol/config.yaml
+          if command -v discord-otelcol-set-token >/dev/null; then
+            printf '%s' 'apt-verification-fixture' | discord-otelcol-set-token --stdin --with-key=host
+            mkdir -m 0700 /run/discord-apt-credentials
+            systemd-creds decrypt --name=discord_bot_token /etc/credstore.encrypted/discord-otelcol.token /run/discord-apt-credentials/discord_bot_token
+            CREDENTIALS_DIRECTORY=/run/discord-apt-credentials discord-otelcol validate --config=/etc/discord-otelcol/config.yaml
+            test "$(stat -c '%a:%U:%G' /etc/credstore.encrypted/discord-otelcol.token)" = 600:root:root
+            test ! -e /etc/discord-otelcol/environment
+          else
+            DISCORD_BOT_TOKEN=test discord-otelcol validate --config=/etc/discord-otelcol/config.yaml
+          fi
           test -f /usr/lib/systemd/system/discord-otelcol.service
-          test "$(stat -c '%a:%U:%G' /etc/discord-otelcol/environment)" = 640:root:root
           test ! -e /etc/systemd/system/multi-user.target.wants/discord-otelcol.service
           test -f /usr/lib/systemd/user/activitylog-agent.service
           test -f /usr/share/gnome-shell/extensions/activitylog@ymotongpoo.net/metadata.json
