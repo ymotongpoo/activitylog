@@ -5,7 +5,7 @@
 #
 # Layout (suite and codename "stable", component "main"):
 #   <dir>/pool/main/a/activitylog-agent/*.deb
-#   <dir>/pool/main/d/discord-otelcol/*.deb
+#   <dir>/pool/main/o/otelcol-extra/*.deb
 #   <dir>/dists/stable/{Release,Release.gpg,InRelease}
 #   <dir>/dists/stable/main/binary-{amd64,arm64}/Packages{,.gz}
 #   <dir>/activitylog.gpg (binary keyring) and activitylog.asc
@@ -23,10 +23,16 @@ printf '%s\n' "$APT_SIGNING_KEY" | gpg --batch --quiet --import
 key="$(gpg --batch --list-secret-keys --with-colons | awk -F: '/^fpr/ {print $10; exit}')"
 
 cd "$repo"
+apt-ftparchive packages pool > "$GNUPGHOME/Packages"
 for arch in amd64 arm64; do
 	dir="dists/stable/main/binary-$arch"
 	mkdir -p "$dir"
-	apt-ftparchive --arch "$arch" packages pool > "$dir/Packages"
+	# --arch excludes Architecture: all; transitional packages need both indexes.
+	awk -v arch="$arch" '
+		BEGIN { RS=""; ORS="\n\n" }
+		{ record="\n" $0 "\n" }
+		index(record, "\nArchitecture: " arch "\n") || index(record, "\nArchitecture: all\n") { print }
+	' "$GNUPGHOME/Packages" > "$dir/Packages"
 	gzip -9 -n -k -f "$dir/Packages"
 done
 
@@ -37,7 +43,7 @@ apt-ftparchive \
 	-o APT::FTPArchive::Release::Codename=stable \
 	-o "APT::FTPArchive::Release::Architectures=amd64 arm64" \
 	-o APT::FTPArchive::Release::Components=main \
-	-o "APT::FTPArchive::Release::Description=activitylog and Discord Collector packages" \
+	-o "APT::FTPArchive::Release::Description=activitylog and Collector Extra packages" \
 	release dists/stable > Release.tmp
 mv Release.tmp dists/stable/Release
 
