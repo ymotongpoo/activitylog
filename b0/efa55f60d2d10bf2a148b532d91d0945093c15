@@ -1,0 +1,21 @@
+README.md
+  s_e8e040ab098906::t_9ae01a605ed47f 137-140
+agent/packaging/linux/index.html
+  s_e8e040ab098906::t_9ae01a605ed47f 21-23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b0efa55f60d2d10bf2a148b532d91d0945093c15",
+  "prompts": {},
+  "sessions": {
+    "s_e8e040ab098906": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16cc5-e396-76e1-84b8-83e572917b16",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Yoshi Yamaguchi <ymotongpoo@gmail.com>"
+    }
+  }
+}
