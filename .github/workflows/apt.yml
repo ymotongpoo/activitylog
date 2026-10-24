@@ -115,7 +115,9 @@ jobs:
           for component in discord slack switchbot s3tables otlp_http; do grep -q "name: $component" components.txt; done
           test -f /usr/lib/systemd/system/otelcol-extra.service
           test ! -e /etc/systemd/system/multi-user.target.wants/otelcol-extra.service
-          if apt-cache show discord-otelcol >/dev/null 2>&1; then exit 1; fi
+          # A name referenced by Breaks/Replaces may return success from "show"
+          # without having any package versions. Check published versions instead.
+          test -z "$(apt-cache madison discord-otelcol)"
           test ! -e /usr/bin/discord-otelcol
           test ! -e /usr/lib/systemd/system/discord-otelcol.service
           test -f /usr/lib/systemd/user/activitylog-agent.service
