@@ -19,8 +19,9 @@ echo "deb [signed-by=/usr/share/keyrings/activitylog.gpg] https://ymotongpoo.git
 sudo apt update
 sudo apt install activitylog-agent</pre>
 <p>To install the Discord Collector instead, run <code>sudo apt install discord-otelcol</code>.
-Set the bot token in <code>/etc/discord-otelcol/environment</code>, then run
+Store the bot token with <code>sudo discord-otelcol-set-token</code>, then run
 <code>sudo systemctl enable --now discord-otelcol</code>. A fresh installation does not start the service.</p>
+<p>The token is stored as an encrypted systemd credential and is decrypted when the service starts.</p>
 <p>Signing key: <a href="apt/activitylog.asc">apt/activitylog.asc</a></p>
 </body>
 </html>
