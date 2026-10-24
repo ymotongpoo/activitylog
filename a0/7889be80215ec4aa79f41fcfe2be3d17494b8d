@@ -1,0 +1,19 @@
+.github/workflows/apt.yml
+  s_b87970ad20b667::t_321673a338a2e6 98-107
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a07889be80215ec4aa79f41fcfe2be3d17494b8d",
+  "prompts": {},
+  "sessions": {
+    "s_b87970ad20b667": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16634-ce17-7700-b4ba-1c78eac1aec5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Yoshi Yamaguchi <ymotongpoo@gmail.com>"
+    }
+  }
+}
