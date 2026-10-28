@@ -109,6 +109,30 @@ object OtlpJsonEncoder {
         return w.toString()
     }
 
+    fun encodeGauges(resource: List<Attribute>, scope: Scope, metrics: List<GaugeMetric>): String {
+        val w = JsonWriter()
+        w.beginObject().name("resourceMetrics").beginArray().beginObject()
+        writeResource(w, resource)
+        w.name("scopeMetrics").beginArray().beginObject()
+        writeScope(w, scope)
+        w.name("metrics").beginArray()
+        for (metric in metrics) {
+            w.beginObject().field("name", metric.name).field("description", metric.description).field("unit", metric.unit)
+            w.name("gauge").beginObject().name("dataPoints").beginArray()
+            for (point in metric.points) {
+                w.beginObject()
+                writeAttributes(w, point.attributes)
+                w.field("timeUnixNano", point.timeUnixNano.toString())
+                if (point.value is Double || point.value is Float) w.field("asDouble", point.value.toDouble())
+                else w.field("asInt", point.value.toLong().toString())
+                w.endObject()
+            }
+            w.endArray().endObject().endObject()
+        }
+        w.endArray().endObject().endArray().endObject().endArray().endObject()
+        return w.toString()
+    }
+
     private fun writeResource(w: JsonWriter, resource: List<Attribute>) {
         w.name("resource").beginObject()
         writeAttributes(w, resource)

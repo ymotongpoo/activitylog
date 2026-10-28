@@ -65,6 +65,11 @@ data class SumMetric(
     val points: List<SumPoint>,
 )
 
+/** A sampled level, recorded at its original measurement time. */
+data class GaugePoint(val attributes: List<Attribute>, val timeUnixNano: Long, val value: Number)
+
+data class GaugeMetric(val name: String, val description: String, val unit: String, val points: List<GaugePoint>)
+
 const val NANOS_PER_MILLI = 1_000_000L
 
 fun Long.millisToNanos(): Long = this * NANOS_PER_MILLI
