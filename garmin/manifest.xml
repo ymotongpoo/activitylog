@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<iq:manifest xmlns:iq="http://www.garmin.com/xml/connectiq" version="3">
+    <iq:application id="5d6df629ae944b64a5806a8dc04bb170"
+        type="watch-app" name="@Strings.AppName" entry="HealthApp"
+        launcherIcon="@Drawables.LauncherIcon" minApiLevel="3.3.0" version="0.3.0">
+        <iq:products>
+            <iq:product id="enduro3" />
+        </iq:products>
+        <iq:permissions>
+            <iq:uses-permission id="Background" />
+            <iq:uses-permission id="Communications" />
+            <iq:uses-permission id="SensorHistory" />
+        </iq:permissions>
+        <iq:languages><iq:language>eng</iq:language></iq:languages>
+        <iq:barrels />
+    </iq:application>
+</iq:manifest>
