@@ -1,0 +1,2005 @@
+{
+  "title": "Garmin · ヘルスと活動",
+  "uid": "activitylog-garmin-health",
+  "description": "Garmin Enduro 3のヘルス、活動、電池、ソーラー充電。最新値、測定または取得からの経過時間、時系列を表示します。",
+  "tags": [
+    "activitylog",
+    "garmin",
+    "health",
+    "android"
+  ],
+  "timezone": "Asia/Tokyo",
+  "editable": true,
+  "graphTooltip": 1,
+  "schemaVersion": 39,
+  "version": 3,
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "refresh": "1m",
+  "links": [
+    {
+      "title": "activitylog",
+      "type": "dashboards",
+      "tags": [
+        "activitylog"
+      ],
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "prom",
+        "label": "Metrics",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {},
+        "hide": 2,
+        "includeAll": false,
+        "multi": false,
+        "options": [],
+        "refresh": 1,
+        "regex": "/^grafanacloud-.+-prom$/",
+        "skipUrlSync": false
+      },
+      {
+        "name": "phone",
+        "label": "スマホ",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${prom}"
+        },
+        "query": "label_values({__name__=~\"garmin_.*\",job=\"activitylog/activitylog-android\"}, instance)",
+        "definition": "label_values({__name__=~\"garmin_.*\",job=\"activitylog/activitylog-android\"}, instance)",
+        "current": {},
+        "hide": 0,
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": false,
+        "options": [],
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1
+      },
+      {
+        "name": "watch",
+        "label": "時計",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${prom}"
+        },
+        "query": "label_values({__name__=~\"garmin_.*\",job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\"}, garmin_device_name)",
+        "definition": "label_values({__name__=~\"garmin_.*\",job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\"}, garmin_device_name)",
+        "current": {},
+        "hide": 0,
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": false,
+        "options": [],
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Body Battery",
+      "type": "gauge",
+      "description": "時計の元の測定時刻を使った0〜100の値。過去24時間の最新測定を表示します。古さは経過時間を確認してください。",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 5
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "editorMode": "code",
+          "expr": "max by (instance, garmin_device_id, garmin_device_name) (last_over_time(garmin_body_battery{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"}[24h]) and topk by (instance, garmin_device_id, garmin_device_name) (1, max_over_time(timestamp(garmin_body_battery{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"})[24h:1m])))",
+          "legendFormat": "{{garmin_device_name}} · {{instance}}",
+          "range": false,
+          "instant": true,
+          "interval": "1m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "max": 100,
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": false,
+        "sizing": "auto"
+      }
+    },
+    {
+      "id": 2,
+      "title": "ストレス",
+      "type": "gauge",
+      "description": "時計の元の測定時刻を使った0〜100の値。過去24時間の最新測定を表示します。古さは経過時間を確認してください。",
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 5
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "editorMode": "code",
+          "expr": "max by (instance, garmin_device_id, garmin_device_name) (last_over_time(garmin_stress{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"}[24h]) and topk by (instance, garmin_device_id, garmin_device_name) (1, max_over_time(timestamp(garmin_stress{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"})[24h:1m])))",
+          "legendFormat": "{{garmin_device_name}} · {{instance}}",
+          "range": false,
+          "instant": true,
+          "interval": "1m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "max": 100,
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": false,
+        "sizing": "auto"
+      }
+    },
+    {
+      "id": 3,
+      "title": "Body Batteryの経過時間",
+      "type": "stat",
+      "description": "時計で測定してからの経過時間です。受信時刻ではありません。15分で黄、30分で赤になります。",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 6,
+        "h": 5
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "editorMode": "code",
+          "expr": "time() - max by (instance, garmin_device_id, garmin_device_name) (max_over_time(timestamp(garmin_body_battery{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"})[24h:1m]))",
+          "legendFormat": "{{garmin_device_name}} · {{instance}}",
+          "range": false,
+          "instant": true,
+          "interval": "1m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 900
+              },
+              {
+                "color": "red",
+                "value": 1800
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 4,
+      "title": "ストレスの経過時間",
+      "type": "stat",
+      "description": "時計で測定してからの経過時間です。受信時刻ではありません。15分で黄、30分で赤になります。",
+      "gridPos": {
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 5
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "editorMode": "code",
+          "expr": "time() - max by (instance, garmin_device_id, garmin_device_name) (max_over_time(timestamp(garmin_stress{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"})[24h:1m]))",
+          "legendFormat": "{{garmin_device_name}} · {{instance}}",
+          "range": false,
+          "instant": true,
+          "interval": "1m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 900
+              },
+              {
+                "color": "red",
+                "value": 1800
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 5,
+      "title": "Body Batteryの推移",
+      "type": "timeseries",
+      "description": "0〜100の測定値の推移。欠測を0に置き換えず、間が空いた箇所はつなぎません。",
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "editorMode": "code",
+          "expr": "max by (instance, garmin_device_id, garmin_device_name) (garmin_body_battery{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"} and topk by (instance, garmin_device_id, garmin_device_name) (1, timestamp(garmin_body_battery{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"})))",
+          "legendFormat": "{{garmin_device_name}} · {{instance}}",
+          "range": true,
+          "instant": false,
+          "interval": "1m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "max": 100,
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "always",
+            "pointSize": 4,
+            "spanNulls": false,
+            "insertNulls": false,
+            "axisLabel": "スコア",
+            "axisPlacement": "auto",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "ストレスの推移",
+      "type": "timeseries",
+      "description": "0〜100の測定値の推移。欠測を0に置き換えず、間が空いた箇所はつなぎません。",
+      "gridPos": {
+        "x": 12,
+        "y": 5,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "editorMode": "code",
+          "expr": "max by (instance, garmin_device_id, garmin_device_name) (garmin_stress{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"} and topk by (instance, garmin_device_id, garmin_device_name) (1, timestamp(garmin_stress{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"})))",
+          "legendFormat": "{{garmin_device_name}} · {{instance}}",
+          "range": true,
+          "instant": false,
+          "interval": "1m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "max": 100,
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "always",
+            "pointSize": 4,
+            "spanNulls": false,
+            "insertNulls": false,
+            "axisLabel": "スコア",
+            "axisPlacement": "auto",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "心拍数",
+      "type": "stat",
+      "description": "直近30分の履歴から選んだ最新の心拍数。 過去24時間の最新値を表示します。経過時間も確認してください。",
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "editorMode": "code",
+          "expr": "max by (instance, garmin_device_id, garmin_device_name) (last_over_time(garmin_heart_rate_per_min{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"}[24h]) and topk by (instance, garmin_device_id, garmin_device_name) (1, max_over_time(timestamp(garmin_heart_rate_per_min{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"})[24h:1m])))",
+          "legendFormat": "{{garmin_device_name}} · {{instance}}",
+          "range": false,
+          "instant": true,
+          "interval": "1m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: bpm",
+          "min": 0,
+          "decimals": 1,
+          "noValue": "No data",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "red"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 9,
+      "title": "呼吸数",
+      "type": "stat",
+      "description": "時計APIの現在値。 過去24時間の最新値を表示します。経過時間も確認してください。",
+      "gridPos": {
+        "x": 4,
+        "y": 14,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "editorMode": "code",
+          "expr": "max by (instance, garmin_device_id, garmin_device_name) (last_over_time(garmin_respiration_rate_per_min{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"}[24h]) and topk by (instance, garmin_device_id, garmin_device_name) (1, max_over_time(timestamp(garmin_respiration_rate_per_min{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"})[24h:1m])))",
+          "legendFormat": "{{garmin_device_name}} · {{instance}}",
+          "range": false,
+          "instant": true,
+          "interval": "1m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: 回/分",
+          "min": 0,
+          "decimals": 1,
+          "noValue": "No data",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "cyan"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "cyan",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 10,
+      "title": "歩数（当日累計）",
+      "type": "stat",
+      "description": "時計の現地時刻の午前0時からの歩数。午前0時にリセットされるGaugeです。 過去24時間の最新値を表示します。経過時間も確認してください。",
+      "gridPos": {
+        "x": 8,
+        "y": 14,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "editorMode": "code",
+          "expr": "max by (instance, garmin_device_id, garmin_device_name) (last_over_time(garmin_steps_today{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"}[24h]) and topk by (instance, garmin_device_id, garmin_device_name) (1, max_over_time(timestamp(garmin_steps_today{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"})[24h:1m])))",
+          "legendFormat": "{{garmin_device_name}} · {{instance}}",
+          "range": false,
+          "instant": true,
+          "interval": "1m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: 歩",
+          "min": 0,
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 11,
+      "title": "時計の電池残量",
+      "type": "stat",
+      "description": "時計の電池残量。小数を保持します。 過去24時間の最新値を表示します。経過時間も確認してください。",
+      "gridPos": {
+        "x": 12,
+        "y": 14,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "editorMode": "code",
+          "expr": "max by (instance, garmin_device_id, garmin_device_name) (last_over_time(garmin_watch_battery_percent{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"}[24h]) and topk by (instance, garmin_device_id, garmin_device_name) (1, max_over_time(timestamp(garmin_watch_battery_percent{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"})[24h:1m])))",
+          "legendFormat": "{{garmin_device_name}} · {{instance}}",
+          "range": false,
+          "instant": true,
+          "interval": "1m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "decimals": 2,
+          "noValue": "No data",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "yellow"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "yellow",
+                "value": null
+              }
+            ]
+          },
+          "max": 100
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 12,
+      "title": "ソーラー強度",
+      "type": "stat",
+      "description": "ソーラー充電効率の0〜100のスコアです。照度（lux）ではありません。非アクティブ時の負の値は欠測にします。 過去24時間の最新値を表示します。経過時間も確認してください。",
+      "gridPos": {
+        "x": 16,
+        "y": 14,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "editorMode": "code",
+          "expr": "max by (instance, garmin_device_id, garmin_device_name) (last_over_time(garmin_solar_intensity{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"}[24h]) and topk by (instance, garmin_device_id, garmin_device_name) (1, max_over_time(timestamp(garmin_solar_intensity{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"})[24h:1m])))",
+          "legendFormat": "{{garmin_device_name}} · {{instance}}",
+          "range": false,
+          "instant": true,
+          "interval": "1m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          },
+          "max": 100
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 13,
+      "title": "SpO₂",
+      "type": "stat",
+      "description": "直近30分の測定済み履歴から選んだ最新値です。測定は開始せず、履歴がないときは欠測にします。 過去24時間の最新値を表示します。経過時間も確認してください。",
+      "gridPos": {
+        "x": 20,
+        "y": 14,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "editorMode": "code",
+          "expr": "max by (instance, garmin_device_id, garmin_device_name) (last_over_time(garmin_oxygen_saturation_percent{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"}[24h]) and topk by (instance, garmin_device_id, garmin_device_name) (1, max_over_time(timestamp(garmin_oxygen_saturation_percent{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"})[24h:1m])))",
+          "legendFormat": "{{garmin_device_name}} · {{instance}}",
+          "range": false,
+          "instant": true,
+          "interval": "1m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "decimals": 1,
+          "noValue": "No data",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          },
+          "max": 100
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 14,
+      "title": "心拍数の経過時間",
+      "type": "stat",
+      "description": "時計での測定からの経過時間です。受信時刻ではありません。15分で黄、30分で赤になります。",
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 4,
+        "h": 3
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "editorMode": "code",
+          "expr": "time() - max by (instance, garmin_device_id, garmin_device_name) (max_over_time(timestamp(garmin_heart_rate_per_min{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"})[24h:1m]))",
+          "legendFormat": "{{garmin_device_name}} · {{instance}}",
+          "range": false,
+          "instant": true,
+          "interval": "1m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 900
+              },
+              {
+                "color": "red",
+                "value": 1800
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 15,
+      "title": "呼吸数の経過時間",
+      "type": "stat",
+      "description": "時計APIからの取得からの経過時間です。受信時刻ではありません。15分で黄、30分で赤になります。",
+      "gridPos": {
+        "x": 4,
+        "y": 18,
+        "w": 4,
+        "h": 3
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "editorMode": "code",
+          "expr": "time() - max by (instance, garmin_device_id, garmin_device_name) (max_over_time(timestamp(garmin_respiration_rate_per_min{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"})[24h:1m]))",
+          "legendFormat": "{{garmin_device_name}} · {{instance}}",
+          "range": false,
+          "instant": true,
+          "interval": "1m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 900
+              },
+              {
+                "color": "red",
+                "value": 1800
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 16,
+      "title": "歩数（当日累計）の経過時間",
+      "type": "stat",
+      "description": "時計APIからの取得からの経過時間です。受信時刻ではありません。15分で黄、30分で赤になります。",
+      "gridPos": {
+        "x": 8,
+        "y": 18,
+        "w": 4,
+        "h": 3
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "editorMode": "code",
+          "expr": "time() - max by (instance, garmin_device_id, garmin_device_name) (max_over_time(timestamp(garmin_steps_today{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"})[24h:1m]))",
+          "legendFormat": "{{garmin_device_name}} · {{instance}}",
+          "range": false,
+          "instant": true,
+          "interval": "1m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 900
+              },
+              {
+                "color": "red",
+                "value": 1800
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 17,
+      "title": "時計の電池残量の経過時間",
+      "type": "stat",
+      "description": "時計APIからの取得からの経過時間です。受信時刻ではありません。15分で黄、30分で赤になります。",
+      "gridPos": {
+        "x": 12,
+        "y": 18,
+        "w": 4,
+        "h": 3
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "editorMode": "code",
+          "expr": "time() - max by (instance, garmin_device_id, garmin_device_name) (max_over_time(timestamp(garmin_watch_battery_percent{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"})[24h:1m]))",
+          "legendFormat": "{{garmin_device_name}} · {{instance}}",
+          "range": false,
+          "instant": true,
+          "interval": "1m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 900
+              },
+              {
+                "color": "red",
+                "value": 1800
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 18,
+      "title": "ソーラー強度の経過時間",
+      "type": "stat",
+      "description": "時計APIからの取得からの経過時間です。受信時刻ではありません。15分で黄、30分で赤になります。",
+      "gridPos": {
+        "x": 16,
+        "y": 18,
+        "w": 4,
+        "h": 3
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "editorMode": "code",
+          "expr": "time() - max by (instance, garmin_device_id, garmin_device_name) (max_over_time(timestamp(garmin_solar_intensity{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"})[24h:1m]))",
+          "legendFormat": "{{garmin_device_name}} · {{instance}}",
+          "range": false,
+          "instant": true,
+          "interval": "1m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 900
+              },
+              {
+                "color": "red",
+                "value": 1800
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 19,
+      "title": "SpO₂の経過時間",
+      "type": "stat",
+      "description": "時計での測定からの経過時間です。受信時刻ではありません。15分で黄、30分で赤になります。",
+      "gridPos": {
+        "x": 20,
+        "y": 18,
+        "w": 4,
+        "h": 3
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "editorMode": "code",
+          "expr": "time() - max by (instance, garmin_device_id, garmin_device_name) (max_over_time(timestamp(garmin_oxygen_saturation_percent{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"})[24h:1m]))",
+          "legendFormat": "{{garmin_device_name}} · {{instance}}",
+          "range": false,
+          "instant": true,
+          "interval": "1m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 900
+              },
+              {
+                "color": "red",
+                "value": 1800
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 20,
+      "title": "心拍数の推移",
+      "type": "timeseries",
+      "description": "直近30分の履歴から選んだ最新の心拍数。 欠測は0に置き換えません。",
+      "gridPos": {
+        "x": 0,
+        "y": 21,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "editorMode": "code",
+          "expr": "max by (instance, garmin_device_id, garmin_device_name) (garmin_heart_rate_per_min{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"} and topk by (instance, garmin_device_id, garmin_device_name) (1, timestamp(garmin_heart_rate_per_min{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"})))",
+          "legendFormat": "{{garmin_device_name}} · {{instance}}",
+          "range": true,
+          "instant": false,
+          "interval": "1m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: bpm",
+          "min": 0,
+          "decimals": 1,
+          "noValue": "No data",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "red"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "always",
+            "pointSize": 4,
+            "spanNulls": false,
+            "insertNulls": false,
+            "axisLabel": "心拍数",
+            "axisPlacement": "auto",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 21,
+      "title": "呼吸数の推移",
+      "type": "timeseries",
+      "description": "時計APIの現在値。 欠測は0に置き換えません。",
+      "gridPos": {
+        "x": 12,
+        "y": 21,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "editorMode": "code",
+          "expr": "max by (instance, garmin_device_id, garmin_device_name) (garmin_respiration_rate_per_min{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"} and topk by (instance, garmin_device_id, garmin_device_name) (1, timestamp(garmin_respiration_rate_per_min{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"})))",
+          "legendFormat": "{{garmin_device_name}} · {{instance}}",
+          "range": true,
+          "instant": false,
+          "interval": "1m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: 回/分",
+          "min": 0,
+          "decimals": 1,
+          "noValue": "No data",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "cyan"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "cyan",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "always",
+            "pointSize": 4,
+            "spanNulls": false,
+            "insertNulls": false,
+            "axisLabel": "呼吸数",
+            "axisPlacement": "auto",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 22,
+      "title": "歩数（当日累計）の推移",
+      "type": "timeseries",
+      "description": "時計の現地時刻の午前0時からの歩数。午前0時にリセットされるGaugeです。 欠測は0に置き換えません。",
+      "gridPos": {
+        "x": 0,
+        "y": 30,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "editorMode": "code",
+          "expr": "max by (instance, garmin_device_id, garmin_device_name) (garmin_steps_today{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"} and topk by (instance, garmin_device_id, garmin_device_name) (1, timestamp(garmin_steps_today{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"})))",
+          "legendFormat": "{{garmin_device_name}} · {{instance}}",
+          "range": true,
+          "instant": false,
+          "interval": "1m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: 歩",
+          "min": 0,
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "always",
+            "pointSize": 4,
+            "spanNulls": false,
+            "insertNulls": false,
+            "axisLabel": "歩数（当日累計）",
+            "axisPlacement": "auto",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 23,
+      "title": "時計の電池残量の推移",
+      "type": "timeseries",
+      "description": "時計の電池残量。小数を保持します。 欠測は0に置き換えません。",
+      "gridPos": {
+        "x": 12,
+        "y": 30,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "editorMode": "code",
+          "expr": "max by (instance, garmin_device_id, garmin_device_name) (garmin_watch_battery_percent{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"} and topk by (instance, garmin_device_id, garmin_device_name) (1, timestamp(garmin_watch_battery_percent{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"})))",
+          "legendFormat": "{{garmin_device_name}} · {{instance}}",
+          "range": true,
+          "instant": false,
+          "interval": "1m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "decimals": 2,
+          "noValue": "No data",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "yellow"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "yellow",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "always",
+            "pointSize": 4,
+            "spanNulls": false,
+            "insertNulls": false,
+            "axisLabel": "時計の電池残量",
+            "axisPlacement": "auto",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 24,
+      "title": "ソーラー強度の推移",
+      "type": "timeseries",
+      "description": "ソーラー充電効率の0〜100のスコアです。照度（lux）ではありません。非アクティブ時の負の値は欠測にします。 欠測は0に置き換えません。",
+      "gridPos": {
+        "x": 0,
+        "y": 39,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "editorMode": "code",
+          "expr": "max by (instance, garmin_device_id, garmin_device_name) (garmin_solar_intensity{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"} and topk by (instance, garmin_device_id, garmin_device_name) (1, timestamp(garmin_solar_intensity{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"})))",
+          "legendFormat": "{{garmin_device_name}} · {{instance}}",
+          "range": true,
+          "instant": false,
+          "interval": "1m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "max": 100,
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "always",
+            "pointSize": 4,
+            "spanNulls": false,
+            "insertNulls": false,
+            "axisLabel": "ソーラー強度",
+            "axisPlacement": "auto",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 25,
+      "title": "SpO₂の推移",
+      "type": "timeseries",
+      "description": "直近30分の測定済み履歴から選んだ最新値です。測定は開始せず、履歴がないときは欠測にします。 欠測は0に置き換えません。",
+      "gridPos": {
+        "x": 12,
+        "y": 39,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prom}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prom}"
+          },
+          "editorMode": "code",
+          "expr": "max by (instance, garmin_device_id, garmin_device_name) (garmin_oxygen_saturation_percent{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"} and topk by (instance, garmin_device_id, garmin_device_name) (1, timestamp(garmin_oxygen_saturation_percent{job=\"activitylog/activitylog-android\",instance=~\"${phone:regex}\",garmin_device_name=~\"${watch:regex}\"})))",
+          "legendFormat": "{{garmin_device_name}} · {{instance}}",
+          "range": true,
+          "instant": false,
+          "interval": "1m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "decimals": 1,
+          "noValue": "No data",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "always",
+            "pointSize": 4,
+            "spanNulls": false,
+            "insertNulls": false,
+            "axisLabel": "SpO₂",
+            "axisPlacement": "auto",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "データの見方",
+      "type": "text",
+      "gridPos": {
+        "x": 0,
+        "y": 48,
+        "w": 24,
+        "h": 5
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "時計を通常画面にしたまま、約5分ごとに自動取得します。最新値は過去24時間の記録から表示します。各値の「経過時間」も確認してください。\n\nBody Battery、ストレス、心拍数、SpO₂は**時計の元の測定時刻**、呼吸数、当日歩数、電池残量、ソーラー強度は**時計APIからの取得時刻**を使います。欠測は0に置き換えません。\n\nSpO₂は直近30分に測定済みの履歴があるときだけ送ります。測定設定は変更しません。ソーラー強度は充電効率の0〜100のスコアで、照度（lux）ではありません。歩数は時計の現地時刻で当日の累計であり、午前0時にリセットされます。"
+      }
+    }
+  ]
+}
