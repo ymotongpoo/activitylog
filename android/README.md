@@ -1,5 +1,10 @@
 # activitylog Android アプリ
 
+Enduro 3のBody Battery、ストレス、心拍数、SpO₂、呼吸数、当日歩数、時計の電池残量、ソーラー強度も、設定画面の「Garmin health」から受信できます。
+時計アプリを一度開くと、アプリを閉じた後も5分ごとに自動送信します。
+受信した値は本体のOTLP設定を使って送ります。
+[時計アプリの導入手順とメトリクス名](../garmin/README.md)を参照してください。
+
 Android 端末の利用状況（ロック解除から画面オフまでの活動区間、前面アプリ、Chromium 系ブラウザで開いている URL）を集め、OTLP/HTTP（JSON + gzip）で Grafana Cloud に直接送るアプリ。
 Play ストアには出さず、サイドロードで使う。
 テレメトリーのモデル（スパンの階層、属性名、メトリクス名、ログのイベント名）は [`docs/design.md`](../docs/design.md) に従う。
