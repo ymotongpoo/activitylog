@@ -34,6 +34,8 @@ object Scheduler {
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 1, TimeUnit.MINUTES)
             .build()
-        WorkManager.getInstance(context).enqueueUniqueWork(FLUSH, ExistingWorkPolicy.KEEP, request)
+        // Keep a wake-up arriving while the current flush is finishing. With
+        // KEEP, an inbox commit after its drain could wait until the next job.
+        WorkManager.getInstance(context).enqueueUniqueWork(FLUSH, ExistingWorkPolicy.APPEND_OR_REPLACE, request)
     }
 }

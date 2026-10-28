@@ -1,6 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">activitylog</string>
+    <string name="garmin_title">Garmin health</string>
+    <string name="garmin_help">Sign in to Garmin Connect on this phone and check that Enduro 3 appears under Garmin Devices. Start the receiver here and open Activitylog Health on the watch once. Watch health, activity and battery data are sent automatically every five minutes, even after closing the watch app. Received values upload using Activitylog’s OTLP settings. History readings keep their measurement time; current-state readings show when they were observed. The receiver resumes after phone restarts and app updates.</string>
+    <string name="garmin_help_local">Standalone transport monitor. Start the receiver and open Activitylog Health on Enduro 3 once. Samples arrive automatically every five minutes and stay on this phone. Use Garmin health in the main Activitylog app for OTLP uploads.</string>
+    <string name="garmin_export_status">Waiting to prepare upload: %1$d samples\nActivitylog upload: %2$s</string>
+    <string name="garmin_summary">%1$s\nLast received: %2$s</string>
+    <string name="garmin_disabled">Watch health, activity and battery data every five minutes. Open Garmin health to enable.</string>
+    <string name="garmin_start">Start receiver</string>
+    <string name="garmin_stop">Stop receiver</string>
+    <string name="garmin_back">Back to settings</string>
+    <string name="garmin_notification">Receiving Garmin health data</string>
+    <string name="garmin_notification_detail">Receiving watch health and activity samples every five minutes</string>
+    <string name="garmin_recent">Recent samples (newest first)</string>
+    <string name="garmin_no_data">No samples yet. Open Activitylog Health on the watch once, then return to the watch face. Sending starts automatically; allow about five minutes for the next background sample. No Send test action is needed.</string>
+    <string name="garmin_no_watches">Garmin Connect returned no watches. Open Garmin Connect, sign in, and check that Enduro 3 appears under Garmin Devices. This receiver retries every 30 seconds.</string>
+    <string name="garmin_permission_needed">Allow Nearby devices to keep the watch receiver running.</string>
+    <string name="garmin_status">%1$s\n\nPackets received: %2$d\nLast received: %3$s\nSaved samples: %4$d (latest 288)</string>
     <string name="accessibility_service_label">activitylog browser URL capture</string>
     <string name="accessibility_service_description">Reads the address bar of Chrome-based browsers (Chrome, Brave, Edge, Vivaldi, Chromium) so that activitylog can record which sites you visit. The data is sent only to the Grafana Cloud stack configured in the app.</string>
 

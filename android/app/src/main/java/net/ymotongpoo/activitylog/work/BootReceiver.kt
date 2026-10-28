@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import net.ymotongpoo.activitylog.location.LocationService
+import net.ymotongpoo.activitylog.garmin.GarminReceiverService
 
 /**
  * Runs a collection right after boot (WorkManager itself reschedules the periodic job)
@@ -17,8 +18,12 @@ class BootReceiver : BroadcastReceiver() {
                 Scheduler.ensurePeriodic(context)
                 Scheduler.runNow(context)
                 LocationService.sync(context)
+                GarminReceiverService.sync(context)
             }
-            Intent.ACTION_MY_PACKAGE_REPLACED -> LocationService.sync(context)
+            Intent.ACTION_MY_PACKAGE_REPLACED -> {
+                LocationService.sync(context)
+                GarminReceiverService.sync(context)
+            }
         }
     }
 }

@@ -46,7 +46,7 @@ jobs:
           distribution: temurin
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v6
-      - run: ./gradlew assembleDebug testDebugUnitTest
+      - run: ./gradlew assembleDebug assembleGarminPrototype testDebugUnitTest
         working-directory: android
 
   vscode:

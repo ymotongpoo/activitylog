@@ -72,6 +72,16 @@
             style="@style/WideButton"
             android:text="@string/categories_manage" />
 
+        <Button
+            android:id="@+id/open_garmin"
+            style="@style/WideButton"
+            android:text="@string/garmin_title" />
+
+        <TextView
+            android:id="@+id/garmin_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
         <TextView
             style="@style/SectionTitle"
             android:text="@string/section_privacy" />

@@ -19,6 +19,8 @@ import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import net.ymotongpoo.activitylog.R
+import net.ymotongpoo.activitylog.garmin.GarminReceiverService
+import net.ymotongpoo.activitylog.garmin.GarminStore
 import net.ymotongpoo.activitylog.collect.UrlMode
 import net.ymotongpoo.activitylog.location.LocationCollector
 import net.ymotongpoo.activitylog.location.LocationInterval
@@ -130,6 +132,9 @@ class MainActivity : Activity() {
         findViewById<Button>(R.id.manage_categories).setOnClickListener {
             startActivity(Intent(this, CategoriesActivity::class.java))
         }
+        findViewById<Button>(R.id.open_garmin).setOnClickListener {
+            startActivity(Intent(this, net.ymotongpoo.activitylog.garmin.GarminActivity::class.java))
+        }
         locationInterval.setOnCheckedChangeListener { _, _ -> saveSettings() }
         locationEnabled.setOnCheckedChangeListener { _, checked ->
             saveSettings()
@@ -146,6 +151,8 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         statusStore.prefs.registerOnSharedPreferenceChangeListener(statusListener)
+        GarminStore(this).prefs.registerOnSharedPreferenceChangeListener(statusListener)
+        GarminReceiverService.sync(this)
         refreshPermissions()
         refreshStatus()
     }
@@ -156,6 +163,7 @@ class MainActivity : Activity() {
         // restored view state.
         saveSettings()
         statusStore.prefs.unregisterOnSharedPreferenceChangeListener(statusListener)
+        GarminStore(this).prefs.unregisterOnSharedPreferenceChangeListener(statusListener)
         super.onPause()
     }
 
@@ -281,6 +289,10 @@ class MainActivity : Activity() {
     private fun refreshStatus() {
         val fmt = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM)
         fun time(ms: Long) = if (ms <= 0) getString(R.string.never) else fmt.format(Date(ms))
+        val garmin = GarminStore(this)
+        findViewById<TextView>(R.id.garmin_summary).text = if (garmin.enabled) {
+            getString(R.string.garmin_summary, garmin.status, time(garmin.lastReceivedAt * 1000))
+        } else getString(R.string.garmin_disabled)
         val spool = Spool(File(filesDir, "spool"))
         status.text = getString(
             R.string.status_text,

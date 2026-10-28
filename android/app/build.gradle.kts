@@ -28,6 +28,7 @@ android {
         targetSdk = 36
         versionCode = appVersionCode
         versionName = appVersion
+        buildConfigField("boolean", "GARMIN_EXPORT_ENABLED", "true")
     }
 
     signingConfigs {
@@ -42,6 +43,13 @@ android {
     }
 
     buildTypes {
+        create("garminPrototype") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".garminprototype"
+            versionNameSuffix = "-garmin-prototype"
+            matchingFallbacks += listOf("debug")
+            buildConfigField("boolean", "GARMIN_EXPORT_ENABLED", "false")
+        }
         release {
             isMinifyEnabled = false
             if (releaseKeystore != null) {
@@ -74,6 +82,7 @@ kotlin {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.work.runtime)
+    implementation(libs.garmin.connectiq)
 
     testImplementation(libs.junit)
     // android.jar only ships stubs of org.json; use the real implementation in JVM tests.

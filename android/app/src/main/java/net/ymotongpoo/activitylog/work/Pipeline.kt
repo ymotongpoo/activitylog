@@ -7,6 +7,8 @@ import android.os.Process
 import android.provider.Settings
 import android.util.Log
 import net.ymotongpoo.activitylog.BuildConfig
+import net.ymotongpoo.activitylog.garmin.GarminStore
+import net.ymotongpoo.activitylog.garmin.GarminTelemetry
 import net.ymotongpoo.activitylog.browser.ObservationQueue
 import net.ymotongpoo.activitylog.collect.ActivityEngine
 import net.ymotongpoo.activitylog.collect.NetworkTransport
@@ -289,6 +291,9 @@ class Pipeline(context: Context) {
 
     private fun flushLocked(settings: AppSettings): FlushResult {
         val nowMs = System.currentTimeMillis()
+        // Independent of Usage Access and its 15-minute collection schedule.
+        // A receiver callback schedules this flush after committing its inbox.
+        spoolGarmin(settings)
         if (!settings.isExportConfigured) {
             val r = FlushResult(0, 0, spool.count(), retryable = false, lastError = "not configured")
             val missing = settings.missingExportSettings().joinToString(", ")
@@ -323,6 +328,20 @@ class Pipeline(context: Context) {
         status.recordSend(nowMs, summary)
         if (result.retryable) Log.w(TAG, "send deferred: ${result.lastError}")
         return result
+    }
+
+    private fun spoolGarmin(settings: AppSettings) {
+        if (!BuildConfig.GARMIN_EXPORT_ENABLED) return
+        val inbox = GarminStore(ctx)
+        val receipts = inbox.pending()
+        if (receipts.isEmpty()) return
+        val batch = GarminTelemetry.build(receipts, inbox.checkpoints())
+        if (batch.metrics.isNotEmpty()) {
+            val body = OtlpJsonEncoder.encodeGauges(DeviceInfo.resource(ctx, settings.deviceNameOverride), DeviceInfo.scope, batch.metrics)
+            val dropped = spool.put(Signal.METRICS, Gzip.compress(body))
+            if (dropped.isNotEmpty()) status.diagnostic(Severity.WARN, "Spool full: dropped ${dropped.size} oldest payload(s)")
+        }
+        inbox.exported(receipts, batch.checkpoints)
     }
 
     companion object {

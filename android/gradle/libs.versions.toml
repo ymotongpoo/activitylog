@@ -5,12 +5,14 @@ androidxCore = "1.17.0"
 androidxWork = "2.11.0"
 junit = "4.13.2"
 orgJson = "20250517"
+garminConnectIq = "2.4.0"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
 androidx-work-runtime = { module = "androidx.work:work-runtime", version.ref = "androidxWork" }
 junit = { module = "junit:junit", version.ref = "junit" }
 org-json = { module = "org.json:json", version.ref = "orgJson" }
+garmin-connectiq = { module = "com.garmin.connectiq:ciq-companion-app-sdk", version.ref = "garminConnectIq" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
