@@ -1,6 +1,8 @@
 package net.ymotongpoo.activitylog.otlp
 
+import net.ymotongpoo.activitylog.storage.DurableFiles
 import java.io.File
+import java.io.FileOutputStream
 import java.util.Locale
 
 /**
@@ -20,7 +22,7 @@ class Spool(
     /** Stores a payload. Returns the files dropped to stay under the size cap. */
     @Synchronized
     fun put(signal: Signal, gzBody: ByteArray): List<File> {
-        dir.mkdirs()
+        if (dir.mkdirs()) DurableFiles.syncDirectory(dir.parentFile!!)
         var target: File
         do {
             seq = (seq + 1) % 1_000_000
@@ -28,11 +30,15 @@ class Spool(
             target = File(dir, name)
         } while (target.exists())
         val tmp = File(dir, target.name + ".tmp")
-        tmp.writeBytes(gzBody)
+        FileOutputStream(tmp).use {
+            it.write(gzBody)
+            it.fd.sync()
+        }
         if (!tmp.renameTo(target)) {
             tmp.delete()
             throw java.io.IOException("cannot move spool file into place: $target")
         }
+        DurableFiles.syncDirectory(dir)
         return trim()
     }
 

@@ -7,5 +7,6 @@ class ActivityLogApp : Application() {
     override fun onCreate() {
         super.onCreate()
         Scheduler.ensurePeriodic(this)
+        Scheduler.enqueueFlush(this)
     }
 }

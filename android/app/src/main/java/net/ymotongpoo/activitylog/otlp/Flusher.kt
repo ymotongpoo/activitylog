@@ -7,15 +7,18 @@ data class FlushResult(
     /** True when sending stopped because of a retryable failure. */
     val retryable: Boolean,
     val lastError: String?,
+    val retained: Int = 0,
 )
 
 /** Sends spooled payloads oldest-first, stopping at the first retryable failure. */
 class Flusher(
     private val spool: Spool,
     private val send: (Signal, ByteArray) -> SendResult,
+    private val rejectedQueue: RejectedQueue,
     private val onRejected: (Signal, SendResult.Rejected) -> Unit,
 ) {
     fun flush(): FlushResult {
+        var retained = 0
         var sent = 0
         var dropped = 0
         var lastError: String? = null
@@ -34,16 +37,16 @@ class Flusher(
                     sent++
                 }
                 is SendResult.Retryable -> {
-                    return FlushResult(sent, dropped, spool.count(), true, r.reason)
+                    return FlushResult(sent, dropped, spool.count(), true, r.reason, retained)
                 }
                 is SendResult.Rejected -> {
-                    spool.delete(entry)
-                    dropped++
+                    dropped += rejectedQueue.retain(entry)
+                    retained++
                     lastError = "HTTP ${r.status} for ${entry.signal.id}: ${r.body.take(300)}"
                     onRejected(entry.signal, r)
                 }
             }
         }
-        return FlushResult(sent, dropped, spool.count(), false, lastError)
+        return FlushResult(sent, dropped, spool.count(), false, lastError, retained)
     }
 }

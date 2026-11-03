@@ -18,9 +18,9 @@ class ObservationQueueTest {
         val b = BrowserObservation(2, "com.brave.browser", "example.org")
         q.append(a)
         assertEquals(listOf(a), q.beginDrain())
-        // Not committed (e.g. the job died): the next drain sees it again plus new data.
+        // Recreate the queue after interruption; recover both old and new data.
         q.append(b)
-        assertEquals(listOf(a, b), q.beginDrain())
+        assertEquals(listOf(a, b), ObservationQueue(tmp.root).beginDrain())
         q.commitDrain()
         assertTrue(q.beginDrain().isEmpty())
     }

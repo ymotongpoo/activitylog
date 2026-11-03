@@ -10,7 +10,30 @@ class SpoolTest {
     @get:Rule
     val tmp = TemporaryFolder()
 
+    private val rejectedQueue get() = RejectedQueue(java.io.File(tmp.root, "rejected"))
+
     private var clock = 1_000L
+
+    @Test
+    fun retriesPersistedPayloadsAfterRestartWithoutChangingTheirBytes() {
+        val original = Spool(tmp.root, clock = { clock++ })
+        val bodies = Signal.entries.map { signal ->
+            Gzip.compress("{\"signal\":\"${signal.id}\",\"timestamp\":1000}")
+        }
+        Signal.entries.zip(bodies).forEach { (signal, body) -> original.put(signal, body) }
+        val offline = Flusher(original, { _, _ -> SendResult.Retryable("offline") }, rejectedQueue, { _, _ -> }).flush()
+        assertTrue(offline.retryable)
+        assertEquals(3, offline.remaining)
+        val restarted = Spool(tmp.root)
+        val received = mutableListOf<Pair<Signal, List<Byte>>>()
+        val online = Flusher(restarted, { signal, body ->
+            received += signal to body.toList()
+            SendResult.Success
+        }, rejectedQueue, { _, _ -> }).flush()
+        assertEquals(Signal.entries.zip(bodies.map { it.toList() }), received)
+        assertEquals(3, online.sent)
+        assertEquals(0, Spool(tmp.root).count())
+    }
 
     @Test
     fun entriesAreOldestFirst() {
@@ -35,7 +58,7 @@ class SpoolTest {
     }
 
     @Test
-    fun flusherStopsAtRetryableAndDropsRejected() {
+    fun flusherStopsAtRetryableAndRetainsRejected() {
         val spool = Spool(tmp.root, clock = { clock++ })
         spool.put(Signal.TRACES, byteArrayOf(1))
         spool.put(Signal.LOGS, byteArrayOf(2))
@@ -49,11 +72,14 @@ class SpoolTest {
         )
         val result = Flusher(
             spool,
+            rejectedQueue = rejectedQueue,
             send = { _, body -> responses.getValue(body[0].toInt()) },
             onRejected = { _, r -> rejected += r.status },
         ).flush()
         assertEquals(1, result.sent)
-        assertEquals(1, result.dropped)
+        assertEquals(0, result.dropped)
+        assertEquals(1, result.retained)
+        assertEquals(1, rejectedQueue.count())
         assertTrue(result.retryable)
         assertEquals(2, result.remaining)
         assertEquals(listOf(400), rejected)

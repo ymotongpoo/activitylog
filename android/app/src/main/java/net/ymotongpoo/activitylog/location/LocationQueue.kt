@@ -1,5 +1,6 @@
 package net.ymotongpoo.activitylog.location
 
+import net.ymotongpoo.activitylog.storage.DurableFiles
 import java.io.File
 import java.io.FileOutputStream
 
@@ -13,31 +14,49 @@ class LocationQueue(dir: File, private val maxBytes: Long = DEFAULT_MAX_BYTES) {
     private val processingFile = File(dir, "locations.processing.jsonl")
 
     fun append(fix: LocationFix): Boolean = synchronized(LOCK) {
-        if (queueFile.length() > maxBytes) return false
+        if (queueFile.length() + processingFile.length() > maxBytes) return false
         queueFile.parentFile?.mkdirs()
         FileOutputStream(queueFile, true).use {
-            it.write((fix.toJsonLine() + "\n").toByteArray(Charsets.UTF_8))
+            it.write(("\n" + fix.toJsonLine() + "\n").toByteArray(Charsets.UTF_8))
+            it.fd.sync()
         }
+        DurableFiles.syncDirectory(queueFile.parentFile!!)
         true
     }
 
     fun beginDrain(): List<LocationFix> = synchronized(LOCK) {
-        if (processingFile.length() > maxBytes) processingFile.delete()
         if (queueFile.exists()) {
             if (processingFile.exists()) {
-                processingFile.appendBytes(queueFile.readBytes())
-                queueFile.delete()
+                // Persist the merged batch before removing its source. A crash between
+                // these steps can replay data, but cannot discard uncommitted records.
+                val merged = File(processingFile.path + ".tmp")
+                FileOutputStream(merged).use {
+                    it.write(processingFile.readBytes())
+                    it.write('\n'.code)
+                    it.write(queueFile.readBytes())
+                    it.fd.sync()
+                }
+                if (!merged.renameTo(processingFile)) {
+                    throw java.io.IOException("cannot replace $processingFile")
+                }
+                DurableFiles.syncDirectory(queueFile.parentFile!!)
+                if (!queueFile.delete()) throw java.io.IOException("cannot delete $queueFile")
             } else if (!queueFile.renameTo(processingFile)) {
-                processingFile.writeBytes(queueFile.readBytes())
-                queueFile.delete()
+                throw java.io.IOException("cannot move queue into processing: $queueFile")
             }
+            DurableFiles.syncDirectory(queueFile.parentFile!!)
         }
         if (!processingFile.exists()) return emptyList()
         processingFile.readLines(Charsets.UTF_8).mapNotNull(LocationFix::fromJsonLine)
     }
 
     fun commitDrain() {
-        synchronized(LOCK) { processingFile.delete() }
+        synchronized(LOCK) {
+            if (processingFile.exists()) {
+                if (!processingFile.delete()) throw java.io.IOException("cannot delete $processingFile")
+                DurableFiles.syncDirectory(processingFile.parentFile!!)
+            }
+        }
     }
 
     companion object {

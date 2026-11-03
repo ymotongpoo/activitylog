@@ -16,6 +16,7 @@ class BootReceiver : BroadcastReceiver() {
         when (intent.action) {
             Intent.ACTION_BOOT_COMPLETED -> {
                 Scheduler.ensurePeriodic(context)
+                Scheduler.enqueueFlush(context)
                 Scheduler.runNow(context)
                 LocationService.sync(context)
                 GarminReceiverService.sync(context)

@@ -12,7 +12,7 @@ sealed interface SendResult {
     /** Network error, 429 or 5xx: keep the payload and try again later. */
     data class Retryable(val reason: String) : SendResult
 
-    /** Any other 4xx: the payload will never be accepted and must be dropped. */
+    /** Non-retryable response: quarantine the payload for bounded, delayed retries. */
     data class Rejected(val status: Int, val body: String) : SendResult
 }
 

@@ -29,6 +29,7 @@ import net.ymotongpoo.activitylog.otlp.SendResult
 import net.ymotongpoo.activitylog.otlp.Severity
 import net.ymotongpoo.activitylog.otlp.Signal
 import net.ymotongpoo.activitylog.otlp.SpanData
+import net.ymotongpoo.activitylog.otlp.RejectedQueue
 import net.ymotongpoo.activitylog.otlp.Spool
 import net.ymotongpoo.activitylog.otlp.attr
 import net.ymotongpoo.activitylog.otlp.millisToNanos
@@ -58,6 +59,7 @@ class Pipeline(context: Context) {
     private val stateStore = StateStore(File(ctx.filesDir, "state.json"))
     private val queue = ObservationQueue(ctx.filesDir)
     private val spool = Spool(File(ctx.filesDir, "spool"))
+    private val rejectedQueue = RejectedQueue(File(ctx.filesDir, "rejected"))
     private val locationQueue = LocationQueue(ctx.filesDir)
 
     fun collectAndSend(): FlushResult = synchronized(LOCK) {
@@ -73,6 +75,25 @@ class Pipeline(context: Context) {
     }
 
     fun flush(): FlushResult = synchronized(LOCK) { flushLocked(settingsStore.load()) }
+
+    fun retryRejected() = synchronized(LOCK) {
+        reportRejectedCleanup(rejectedQueue.prune())
+        val settings = settingsStore.load()
+        if (settings.isExportConfigured) {
+            val sender = OtlpSender(settings.endpoint, settings.instanceId, settings.token)
+            val result = rejectedQueue.replay(send = sender::send)
+            if (result.attempted > 0 || result.deleted > 0) {
+                status.diagnostic(Severity.INFO,
+                    "Rejected queue: retried ${result.attempted}, sent ${result.sent}, " +
+                        "deleted ${result.deleted}, retained ${result.remaining}")
+            }
+        }
+    }
+
+    private fun reportRejectedCleanup(deleted: Int) {
+        if (deleted > 0) status.diagnostic(Severity.WARN,
+            "Rejected queue: deleted $deleted payload(s) at age, attempt or capacity limit")
+    }
 
     private fun collect(settings: AppSettings) {
         val observations = queue.beginDrain()
@@ -294,8 +315,9 @@ class Pipeline(context: Context) {
         // Independent of Usage Access and its 15-minute collection schedule.
         // A receiver callback schedules this flush after committing its inbox.
         spoolGarmin(settings)
+        reportRejectedCleanup(rejectedQueue.prune())
         if (!settings.isExportConfigured) {
-            val r = FlushResult(0, 0, spool.count(), retryable = false, lastError = "not configured")
+            val r = FlushResult(0, 0, spool.count() + rejectedQueue.count(), retryable = false, lastError = "not configured")
             val missing = settings.missingExportSettings().joinToString(", ")
             val hint = if (settingsStore.tokenUnreadable()) {
                 "; the saved token cannot be decrypted, enter it again"
@@ -308,21 +330,25 @@ class Pipeline(context: Context) {
         val sender = OtlpSender(settings.endpoint, settings.instanceId, settings.token)
         val result = Flusher(
             spool = spool,
+            rejectedQueue = rejectedQueue,
             send = { signal, body -> sender.send(signal, body) },
             onRejected = { signal, rejected: SendResult.Rejected ->
                 status.diagnostic(
                     Severity.ERROR,
-                    "OTLP ${signal.id} rejected with HTTP ${rejected.status}: ${rejected.body.take(500)}",
+                    "OTLP ${signal.id} retained for delayed retry after HTTP ${rejected.status}: ${rejected.body.take(500)}",
                 )
             },
         ).flush()
+        if (result.dropped > 0) status.diagnostic(Severity.WARN,
+            "Send queues: dropped ${result.dropped} payload(s) due to unreadable files or rejected queue limits")
         val time = DateFormat.getTimeInstance(DateFormat.MEDIUM).format(Date(nowMs))
         val summary = buildString {
-            append(if (result.retryable) "Retry pending" else if (result.dropped > 0) "Partially rejected" else "OK")
+            append(if (result.retryable) "Retry pending" else if (result.dropped > 0) "Partially rejected" else if (rejectedQueue.count() > 0) "Rejected data retained" else "OK")
             append(" at ").append(time)
             append(": sent ").append(result.sent)
             if (result.dropped > 0) append(", dropped ").append(result.dropped)
             append(", queued ").append(result.remaining)
+            append(", retained ").append(rejectedQueue.count())
             result.lastError?.let { append(" — ").append(it.take(300)) }
         }
         status.recordSend(nowMs, summary)

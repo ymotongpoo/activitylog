@@ -20,3 +20,13 @@ class FlushWorker(context: Context, params: WorkerParameters) : Worker(context, 
         return if (result.retryable) Result.retry() else Result.success()
     }
 }
+
+/** Checks delayed retries when connected; per-payload deadlines survive restarts. */
+class RetryRejectedWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
+    override fun doWork(): Result = try {
+        Pipeline(applicationContext).retryRejected()
+        Result.success()
+    } catch (_: java.io.IOException) {
+        Result.retry()
+    }
+}

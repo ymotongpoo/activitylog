@@ -14,10 +14,16 @@ import java.util.concurrent.TimeUnit
 object Scheduler {
     private const val PERIODIC = "collect-periodic"
     private const val NOW = "collect-now"
+    private const val REJECTED = "retry-rejected"
     private const val FLUSH = "flush"
 
     /** Collection runs every 15 minutes regardless of connectivity; payloads are spooled. */
     fun ensurePeriodic(context: Context) {
+        val rejected = PeriodicWorkRequest.Builder(RetryRejectedWorker::class.java, 15, TimeUnit.MINUTES)
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .build()
+        WorkManager.getInstance(context)
+            .enqueueUniquePeriodicWork(REJECTED, ExistingPeriodicWorkPolicy.KEEP, rejected)
         val request = PeriodicWorkRequest.Builder(CollectWorker::class.java, 15, TimeUnit.MINUTES).build()
         WorkManager.getInstance(context)
             .enqueueUniquePeriodicWork(PERIODIC, ExistingPeriodicWorkPolicy.KEEP, request)
