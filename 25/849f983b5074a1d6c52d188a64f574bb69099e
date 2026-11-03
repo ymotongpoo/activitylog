@@ -1,0 +1,49 @@
+android/app/src/main/java/net/ymotongpoo/activitylog/ActivityLogApp.kt
+  s_faea362d28ae71::t_adb4d2cdc38fc3 10
+android/app/src/main/java/net/ymotongpoo/activitylog/browser/ObservationQueue.kt
+  s_faea362d28ae71::t_3d2b3fbed0a9c2 3,13,20,23-24,26,33-46,48,50,57-62
+android/app/src/main/java/net/ymotongpoo/activitylog/location/LocationQueue.kt
+  s_faea362d28ae71::t_56a6f4169cffcc 3,17,20-21,23,30-43,45,47,54-59
+android/app/src/main/java/net/ymotongpoo/activitylog/otlp/Flusher.kt
+  s_faea362d28ae71::t_bfa75d60321aff 10,17,21,40,43-44,50
+android/app/src/main/java/net/ymotongpoo/activitylog/otlp/OtlpSender.kt
+  s_faea362d28ae71::t_2a5d01b8ab1a00 15
+android/app/src/main/java/net/ymotongpoo/activitylog/otlp/RejectedQueue.kt
+  s_faea362d28ae71::t_b8715ce5f6ad30 1-99
+android/app/src/main/java/net/ymotongpoo/activitylog/otlp/Spool.kt
+  s_faea362d28ae71::t_f7fb6c406f7ccf 3,5,25,33-36,41
+android/app/src/main/java/net/ymotongpoo/activitylog/storage/DurableFiles.kt
+  s_faea362d28ae71::t_2d4b69dfa08260 1-12
+android/app/src/main/java/net/ymotongpoo/activitylog/work/BootReceiver.kt
+  s_faea362d28ae71::t_51e22ff3aab6b7 19
+android/app/src/main/java/net/ymotongpoo/activitylog/work/Pipeline.kt
+  s_faea362d28ae71::t_c9a7b3d036bb19 32,62,79-97,318,320,333,338,342-343,346,351
+android/app/src/main/java/net/ymotongpoo/activitylog/work/Scheduler.kt
+  s_faea362d28ae71::t_2afea072ee509e 17,22-26
+android/app/src/main/java/net/ymotongpoo/activitylog/work/Workers.kt
+  s_faea362d28ae71::t_baf3a3e74e3d35 23-32
+android/app/src/test/java/net/ymotongpoo/activitylog/browser/ObservationQueueTest.kt
+  s_faea362d28ae71::t_3f2f5e0b81cab2 21,23
+android/app/src/test/java/net/ymotongpoo/activitylog/location/LocationQueueTest.kt
+  s_faea362d28ae71::t_6fd087de7d67bc 1-38
+android/app/src/test/java/net/ymotongpoo/activitylog/otlp/RejectedQueueTest.kt
+  s_faea362d28ae71::t_eee3a53882688a 1-128
+android/app/src/test/java/net/ymotongpoo/activitylog/otlp/SpoolTest.kt
+  s_faea362d28ae71::t_368c9c750df219 13-14,17-37,61,75,80-82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "25849f983b5074a1d6c52d188a64f574bb69099e",
+  "prompts": {},
+  "sessions": {
+    "s_faea362d28ae71": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a1ff-8141-7971-b23b-adce53faae10",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Yoshi Yamaguchi <ymotongpoo@gmail.com>"
+    }
+  }
+}
