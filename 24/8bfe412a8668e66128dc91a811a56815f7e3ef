@@ -1,0 +1,21 @@
+android/README.md
+  s_faea362d28ae71::t_de3881519f8e08 23,156,158-188
+dashboards/README.md
+  s_faea362d28ae71::t_a1a82267f219ca 71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "248bfe412a8668e66128dc91a811a56815f7e3ef",
+  "prompts": {},
+  "sessions": {
+    "s_faea362d28ae71": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a1ff-8141-7971-b23b-adce53faae10",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Yoshi Yamaguchi <ymotongpoo@gmail.com>"
+    }
+  }
+}
