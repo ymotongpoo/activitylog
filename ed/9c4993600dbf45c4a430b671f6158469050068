@@ -1,0 +1,19 @@
+dashboards/android.json
+  s_faea362d28ae71::t_534a19d28e89bb 1472-1527,1535,1548,1605,1643,1656,1693,1735,1748,1806,1819
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ed9c4993600dbf45c4a430b671f6158469050068",
+  "prompts": {},
+  "sessions": {
+    "s_faea362d28ae71": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a1ff-8141-7971-b23b-adce53faae10",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Yoshi Yamaguchi <ymotongpoo@gmail.com>"
+    }
+  }
+}
