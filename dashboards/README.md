@@ -68,6 +68,7 @@ Grafana Cloudの[OTLPの単位変換](https://grafana.com/docs/grafana-cloud/sen
 Loki の structured metadata（`geo_location_lat`、`geo_location_lon`）を Extract fields の変換で取り出して数値に変換している。
 位置の記録がオフのとき（デフォルト）は何も表示されない。
 `android.json` の「Route」は同じログを時刻順に線でつなぎ、「Speed」は位置に付いた速度（`activity_location_speed`）を km/h で表示する。
+「Altitude」は位置に付いた高度（`activity_location_altitude`）を m で表示する。時間区間ごとの平均を端末別に描き、高度がない測位は除外する。
 
 ## ラベル名
 
