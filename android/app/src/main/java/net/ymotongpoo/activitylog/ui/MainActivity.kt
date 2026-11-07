@@ -135,6 +135,9 @@ class MainActivity : Activity() {
         findViewById<Button>(R.id.open_garmin).setOnClickListener {
             startActivity(Intent(this, net.ymotongpoo.activitylog.garmin.GarminActivity::class.java))
         }
+        findViewById<Button>(R.id.open_sleep).setOnClickListener {
+            startActivity(Intent(this, net.ymotongpoo.activitylog.sleep.SleepActivity::class.java))
+        }
         locationInterval.setOnCheckedChangeListener { _, _ -> saveSettings() }
         locationEnabled.setOnCheckedChangeListener { _, checked ->
             saveSettings()

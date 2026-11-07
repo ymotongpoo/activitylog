@@ -82,6 +82,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
+        <Button
+            android:id="@+id/open_sleep"
+            style="@style/WideButton"
+            android:text="@string/sleep_title" />
+
         <TextView
             style="@style/SectionTitle"
             android:text="@string/section_privacy" />

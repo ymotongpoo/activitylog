@@ -24,6 +24,7 @@ object Scheduler {
             .build()
         WorkManager.getInstance(context)
             .enqueueUniquePeriodicWork(REJECTED, ExistingPeriodicWorkPolicy.KEEP, rejected)
+        net.ymotongpoo.activitylog.sleep.SleepScheduler.ensure(context)
         val request = PeriodicWorkRequest.Builder(CollectWorker::class.java, 15, TimeUnit.MINUTES).build()
         WorkManager.getInstance(context)
             .enqueueUniquePeriodicWork(PERIODIC, ExistingPeriodicWorkPolicy.KEEP, request)

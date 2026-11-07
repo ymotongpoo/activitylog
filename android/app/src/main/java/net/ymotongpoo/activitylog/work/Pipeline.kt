@@ -9,6 +9,10 @@ import android.util.Log
 import net.ymotongpoo.activitylog.BuildConfig
 import net.ymotongpoo.activitylog.garmin.GarminStore
 import net.ymotongpoo.activitylog.garmin.GarminTelemetry
+import net.ymotongpoo.activitylog.sleep.SleepLogs
+import net.ymotongpoo.activitylog.sleep.SleepReconciler
+import net.ymotongpoo.activitylog.sleep.SleepSession
+import net.ymotongpoo.activitylog.sleep.SleepStore
 import net.ymotongpoo.activitylog.browser.ObservationQueue
 import net.ymotongpoo.activitylog.collect.ActivityEngine
 import net.ymotongpoo.activitylog.collect.NetworkTransport
@@ -93,6 +97,24 @@ class Pipeline(context: Context) {
     private fun reportRejectedCleanup(deleted: Int) {
         if (deleted > 0) status.diagnostic(Severity.WARN,
             "Rejected queue: deleted $deleted payload(s) at age, attempt or capacity limit")
+    }
+
+    /** Complete sleep snapshots share the same spool lock as ordinary collection and Garmin exports. */
+    fun importSleep(sessions: List<SleepSession>, fromMs: Long, toMs: Long): Int = synchronized(LOCK) {
+        val store = SleepStore(ctx)
+        if (!BuildConfig.GARMIN_EXPORT_ENABLED || !store.enabled) return@synchronized 0
+        val update = SleepReconciler.reconcile(store.sessions(), sessions, fromMs, toMs)
+        val settings = settingsStore.load()
+        val logs = SleepLogs.build(update.changes, toMs)
+        for (chunk in logs.chunked(MAX_ITEMS_PER_REQUEST)) {
+            val body = OtlpJsonEncoder.encodeLogs(DeviceInfo.resource(ctx, settings.deviceNameOverride), DeviceInfo.scope, chunk)
+            val dropped = spool.put(Signal.LOGS, Gzip.compress(body))
+            if (dropped.isNotEmpty()) status.diagnostic(Severity.WARN, "Spool full: dropped ${dropped.size} oldest payload(s)")
+        }
+        // Retrying after an interrupted checkpoint may repeat an event with the same event.id.
+        // It cannot lose an accepted snapshot, and dashboards select the last complete revision.
+        store.checkpoint(update.sessions, toMs, update.changes.size)
+        update.changes.size
     }
 
     private fun collect(settings: AppSettings) {

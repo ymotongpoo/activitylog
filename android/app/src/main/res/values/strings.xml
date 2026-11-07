@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">activitylog</string>
+    <string name="sleep_title">Sleep records</string>
+    <string name="sleep_help">Import sleep sessions and stages written by Garmin Connect to Health Connect. First, allow Garmin Connect to write Sleep in Android’s Health Connect settings and sync your watch. Then enable sleep import here and allow Sleep and background access. Completed sessions from the last 28 days are checked about every 15 minutes; Import now works with foreground access alone. Sleep records upload through Activitylog’s OTLP settings. Sleep stages can arrive after waking and syncing, and are not a live sleep detector.</string>
+    <string name="sleep_enable">Enable sleep import / review access</string>
+    <string name="sleep_import_now">Import now</string>
+    <string name="sleep_stop">Stop sleep import</string>
+    <string name="sleep_settings">Open Health Connect</string>
+    <string name="sleep_privacy_title">Sleep data privacy</string>
+    <string name="sleep_importing">Reading sleep records…</string>
+    <string name="sleep_no_records">No Garmin sleep records yet. Allow Garmin Connect to write Sleep in Health Connect, sync your watch, then select Import now.</string>
+    <string name="sleep_privacy">Activitylog sleep data use\n\nWhen you enable sleep import, Activitylog reads only sleep sessions written by Garmin Connect in Health Connect: session and stage start/end times, stage types, source identifiers and modification times. Titles and personal notes are not collected. Activitylog does not write or delete Health Connect data.\n\nCompleted sessions from the last 28 days are imported. With optional background access, Activitylog checks for new, corrected or deleted records about every 15 minutes. Without background access, use Import now while this screen is open.\n\nImported sessions are stored in Activitylog’s private, backup-excluded Android storage. Session snapshots, including stage intervals and corrections, are sent as OTLP logs to the endpoint already configured in Activitylog. Offline payloads wait in the app’s bounded upload queue. The destination’s retention policy controls copies already sent.\n\nYou can stop future imports with Stop sleep import and revoke access in Health Connect at any time. Stopping import does not remove previously sent records. Unclassified intervals stay unknown; no awake/asleep state is inferred outside recorded sessions.</string>
     <string name="garmin_title">Garmin health</string>
     <string name="garmin_help">Sign in to Garmin Connect on this phone and check that Enduro 3 appears under Garmin Devices. Start the receiver here and open Activitylog Health on the watch once. Watch health, activity and battery data are sent automatically every five minutes, even after closing the watch app. Received values upload using Activitylog’s OTLP settings. History readings keep their measurement time; current-state readings show when they were observed. The receiver resumes after phone restarts and app updates.</string>
     <string name="garmin_help_local">Standalone transport monitor. Start the receiver and open Activitylog Health on Enduro 3 once. Samples arrive automatically every five minutes and stay on this phone. Use Garmin health in the main Activitylog app for OTLP uploads.</string>

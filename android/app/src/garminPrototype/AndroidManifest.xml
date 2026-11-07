@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.health.READ_SLEEP" tools:node="remove" />
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND" tools:node="remove" />
     <application
         android:name=".garmin.GarminPrototypeApp"
         android:label="@string/app_name"
         tools:replace="android:name">
         <activity android:name=".ui.MainActivity" tools:node="remove" />
         <activity android:name=".ui.CategoriesActivity" tools:node="remove" />
+        <activity android:name=".sleep.SleepActivity" tools:node="remove" />
+        <activity android:name=".sleep.SleepPrivacyActivity" tools:node="remove" />
+        <activity-alias android:name=".sleep.ViewPermissionUsageActivity" tools:node="remove" />
         <activity android:name=".garmin.GarminActivity" android:exported="true" tools:replace="android:exported">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

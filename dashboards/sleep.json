@@ -1,0 +1,972 @@
+{
+  "tags": [
+    "activitylog",
+    "garmin",
+    "health",
+    "android"
+  ],
+  "timezone": "Asia/Tokyo",
+  "editable": true,
+  "graphTooltip": 1,
+  "schemaVersion": 39,
+  "links": [
+    {
+      "title": "activitylog",
+      "type": "dashboards",
+      "tags": [
+        "activitylog"
+      ],
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "title": "睡眠 · Health Connect",
+  "uid": "activitylog-sleep",
+  "description": "Garmin ConnectからHealth Connectへ同期された睡眠セッションと段階。訂正された記録は最新の内容で集計します。",
+  "version": 2,
+  "time": {
+    "from": "now-28d",
+    "to": "now"
+  },
+  "refresh": "5m",
+  "templating": {
+    "list": [
+      {
+        "name": "loki",
+        "label": "Logs",
+        "type": "datasource",
+        "query": "loki",
+        "current": {},
+        "hide": 2,
+        "includeAll": false,
+        "multi": false,
+        "options": [],
+        "refresh": 1,
+        "regex": "/^grafanacloud-.+-logs$/",
+        "skipUrlSync": false
+      },
+      {
+        "name": "phone",
+        "label": "スマホ",
+        "type": "query",
+        "datasource": {
+          "type": "loki",
+          "uid": "${loki}"
+        },
+        "query": {
+          "label": "service_instance_id",
+          "stream": "{service_name=\"activitylog-android\",service_namespace=\"activitylog\"}",
+          "type": 1
+        },
+        "current": {},
+        "hide": 0,
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": false,
+        "options": [],
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "睡眠セッション数",
+      "type": "stat",
+      "description": "選択した取り込み期間の各セッションについて最新の訂正内容を選び、合計します。睡眠が起きた期間とは異なる場合があります。",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "editorMode": "code",
+          "expr": "sum(last_over_time({service_name=\"activitylog-android\",service_namespace=\"activitylog\",service_instance_id=~\"${phone:regex}\"} | event_name=\"sleep.session\" | json value=\"session_count\", id=\"session_id\" | unwrap value | __error__=\"\" [$__range]) by (id, service_instance_id))",
+          "queryType": "instant",
+          "legendFormat": "",
+          "maxLines": 5000
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 2,
+      "title": "浅い睡眠",
+      "type": "stat",
+      "description": "選択した取り込み期間の各セッションについて最新の訂正内容を選び、合計します。睡眠が起きた期間とは異なる場合があります。",
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "editorMode": "code",
+          "expr": "sum(last_over_time({service_name=\"activitylog-android\",service_namespace=\"activitylog\",service_instance_id=~\"${phone:regex}\"} | event_name=\"sleep.session\" | json value=\"light_seconds\", id=\"session_id\" | unwrap value | __error__=\"\" [$__range]) by (id, service_instance_id))",
+          "queryType": "instant",
+          "legendFormat": "",
+          "maxLines": 5000
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 3,
+      "title": "深い睡眠",
+      "type": "stat",
+      "description": "選択した取り込み期間の各セッションについて最新の訂正内容を選び、合計します。睡眠が起きた期間とは異なる場合があります。",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "editorMode": "code",
+          "expr": "sum(last_over_time({service_name=\"activitylog-android\",service_namespace=\"activitylog\",service_instance_id=~\"${phone:regex}\"} | event_name=\"sleep.session\" | json value=\"deep_seconds\", id=\"session_id\" | unwrap value | __error__=\"\" [$__range]) by (id, service_instance_id))",
+          "queryType": "instant",
+          "legendFormat": "",
+          "maxLines": 5000
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 4,
+      "title": "REM睡眠",
+      "type": "stat",
+      "description": "選択した取り込み期間の各セッションについて最新の訂正内容を選び、合計します。睡眠が起きた期間とは異なる場合があります。",
+      "gridPos": {
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "editorMode": "code",
+          "expr": "sum(last_over_time({service_name=\"activitylog-android\",service_namespace=\"activitylog\",service_instance_id=~\"${phone:regex}\"} | event_name=\"sleep.session\" | json value=\"rem_seconds\", id=\"session_id\" | unwrap value | __error__=\"\" [$__range]) by (id, service_instance_id))",
+          "queryType": "instant",
+          "legendFormat": "",
+          "maxLines": 5000
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 5,
+      "title": "睡眠中の覚醒",
+      "type": "stat",
+      "description": "選択した取り込み期間の各セッションについて最新の訂正内容を選び、合計します。睡眠が起きた期間とは異なる場合があります。",
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "editorMode": "code",
+          "expr": "sum(last_over_time({service_name=\"activitylog-android\",service_namespace=\"activitylog\",service_instance_id=~\"${phone:regex}\"} | event_name=\"sleep.session\" | json value=\"awake_seconds\", id=\"session_id\" | unwrap value | __error__=\"\" [$__range]) by (id, service_instance_id))",
+          "queryType": "instant",
+          "legendFormat": "",
+          "maxLines": 5000
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "yellow"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 6,
+      "title": "未分類の睡眠",
+      "type": "stat",
+      "description": "選択した取り込み期間の各セッションについて最新の訂正内容を選び、合計します。睡眠が起きた期間とは異なる場合があります。",
+      "gridPos": {
+        "x": 6,
+        "y": 4,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "editorMode": "code",
+          "expr": "sum(last_over_time({service_name=\"activitylog-android\",service_namespace=\"activitylog\",service_instance_id=~\"${phone:regex}\"} | event_name=\"sleep.session\" | json value=\"sleeping_seconds\", id=\"session_id\" | unwrap value | __error__=\"\" [$__range]) by (id, service_instance_id))",
+          "queryType": "instant",
+          "legendFormat": "",
+          "maxLines": 5000
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "cyan"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 7,
+      "title": "段階不明",
+      "type": "stat",
+      "description": "選択した取り込み期間の各セッションについて最新の訂正内容を選び、合計します。睡眠が起きた期間とは異なる場合があります。",
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "editorMode": "code",
+          "expr": "sum(last_over_time({service_name=\"activitylog-android\",service_namespace=\"activitylog\",service_instance_id=~\"${phone:regex}\"} | event_name=\"sleep.session\" | json value=\"unknown_seconds\", id=\"session_id\" | unwrap value | __error__=\"\" [$__range]) by (id, service_instance_id))",
+          "queryType": "instant",
+          "legendFormat": "",
+          "maxLines": 5000
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "gray"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 8,
+      "title": "起床中（ベッド内・離床）",
+      "type": "stat",
+      "description": "選択した取り込み期間の各セッションについて最新の訂正内容を選び、合計します。睡眠が起きた期間とは異なる場合があります。",
+      "gridPos": {
+        "x": 18,
+        "y": 4,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "editorMode": "code",
+          "expr": "sum(last_over_time({service_name=\"activitylog-android\",service_namespace=\"activitylog\",service_instance_id=~\"${phone:regex}\"} | event_name=\"sleep.session\" | json value=\"awake_in_bed_seconds\", id=\"session_id\" | unwrap value | __error__=\"\" [$__range]) by (id, service_instance_id)) + sum(last_over_time({service_name=\"activitylog-android\",service_namespace=\"activitylog\",service_instance_id=~\"${phone:regex}\"} | event_name=\"sleep.session\" | json value=\"out_of_bed_seconds\", id=\"session_id\" | unwrap value | __error__=\"\" [$__range]) by (id, service_instance_id))",
+          "queryType": "instant",
+          "legendFormat": "",
+          "maxLines": 5000
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "red"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 9,
+      "type": "table",
+      "title": "睡眠セッション（最新の訂正内容）",
+      "description": "読み込んだログを記録IDでまとめ、最新の内容を表示します。削除通知の最新記録は表示しません。",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 24,
+        "h": 9
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "editorMode": "code",
+          "expr": "{service_name=\"activitylog-android\",service_namespace=\"activitylog\",service_instance_id=~\"${phone:regex}\"} | event_name=\"sleep.session\"",
+          "queryType": "range",
+          "legendFormat": "",
+          "maxLines": 5000
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "sortBy": [
+          {
+            "displayName": "睡眠終了",
+            "desc": true
+          }
+        ]
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "Unknown"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "睡眠開始"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "睡眠終了"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "取り込み時刻"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "区間数"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "記録ID"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "string"
+              }
+            ]
+          }
+        ]
+      },
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "Line",
+            "format": "json",
+            "replace": true,
+            "keepTime": true
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "Time",
+                "desc": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "groupBy",
+          "options": {
+            "fields": {
+              "session_id": {
+                "operation": "groupby",
+                "aggregations": []
+              },
+              "Time": {
+                "operation": "aggregate",
+                "aggregations": [
+                  "lastNotNull"
+                ]
+              },
+              "operation": {
+                "operation": "aggregate",
+                "aggregations": [
+                  "lastNotNull"
+                ]
+              },
+              "start_unix_ms": {
+                "operation": "aggregate",
+                "aggregations": [
+                  "lastNotNull"
+                ]
+              },
+              "end_unix_ms": {
+                "operation": "aggregate",
+                "aggregations": [
+                  "lastNotNull"
+                ]
+              },
+              "duration_seconds": {
+                "operation": "aggregate",
+                "aggregations": [
+                  "lastNotNull"
+                ]
+              },
+              "light_seconds": {
+                "operation": "aggregate",
+                "aggregations": [
+                  "lastNotNull"
+                ]
+              },
+              "deep_seconds": {
+                "operation": "aggregate",
+                "aggregations": [
+                  "lastNotNull"
+                ]
+              },
+              "rem_seconds": {
+                "operation": "aggregate",
+                "aggregations": [
+                  "lastNotNull"
+                ]
+              },
+              "awake_seconds": {
+                "operation": "aggregate",
+                "aggregations": [
+                  "lastNotNull"
+                ]
+              },
+              "unknown_seconds": {
+                "operation": "aggregate",
+                "aggregations": [
+                  "lastNotNull"
+                ]
+              },
+              "sleeping_seconds": {
+                "operation": "aggregate",
+                "aggregations": [
+                  "lastNotNull"
+                ]
+              },
+              "stage_count": {
+                "operation": "aggregate",
+                "aggregations": [
+                  "lastNotNull"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": "filterByValue",
+          "options": {
+            "match": "all",
+            "type": "include",
+            "filters": [
+              {
+                "fieldName": "operation (lastNotNull)",
+                "config": {
+                  "id": "equal",
+                  "options": {
+                    "value": "upsert"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [
+              {
+                "targetField": "start_unix_ms (lastNotNull)",
+                "destinationType": "time"
+              },
+              {
+                "targetField": "end_unix_ms (lastNotNull)",
+                "destinationType": "time"
+              }
+            ]
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "includeByName": {
+              "session_id": true,
+              "Time (lastNotNull)": true,
+              "start_unix_ms (lastNotNull)": true,
+              "end_unix_ms (lastNotNull)": true,
+              "duration_seconds (lastNotNull)": true,
+              "light_seconds (lastNotNull)": true,
+              "deep_seconds (lastNotNull)": true,
+              "rem_seconds (lastNotNull)": true,
+              "awake_seconds (lastNotNull)": true,
+              "unknown_seconds (lastNotNull)": true,
+              "sleeping_seconds (lastNotNull)": true,
+              "stage_count (lastNotNull)": true
+            },
+            "renameByName": {
+              "session_id": "記録ID",
+              "Time (lastNotNull)": "取り込み時刻",
+              "start_unix_ms (lastNotNull)": "睡眠開始",
+              "end_unix_ms (lastNotNull)": "睡眠終了",
+              "duration_seconds (lastNotNull)": "セッション全体",
+              "light_seconds (lastNotNull)": "浅い睡眠",
+              "deep_seconds (lastNotNull)": "深い睡眠",
+              "rem_seconds (lastNotNull)": "REM",
+              "awake_seconds (lastNotNull)": "覚醒",
+              "unknown_seconds (lastNotNull)": "不明",
+              "sleeping_seconds (lastNotNull)": "未分類",
+              "stage_count (lastNotNull)": "区間数"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "logs",
+      "title": "睡眠段階の区間と訂正履歴",
+      "description": "各JSON記録のstagesに元の開始・終了時刻と段階があります。operationはupsertまたはdeleteです。ログの時刻は取り込み時刻です。",
+      "gridPos": {
+        "x": 0,
+        "y": 17,
+        "w": 24,
+        "h": 10
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "editorMode": "code",
+          "expr": "{service_name=\"activitylog-android\",service_namespace=\"activitylog\",service_instance_id=~\"${phone:regex}\"} | event_name=\"sleep.session\"",
+          "queryType": "range",
+          "legendFormat": "",
+          "maxLines": 5000
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "dedupStrategy": "exact",
+        "sortOrder": "Descending"
+      }
+    },
+    {
+      "id": 11,
+      "type": "text",
+      "title": "データの見方",
+      "gridPos": {
+        "x": 0,
+        "y": 27,
+        "w": 24,
+        "h": 5
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "Activitylogの「Sleep records」で睡眠アクセスを許可し、Garmin ConnectからHealth Connectへの睡眠書き込みを有効にしてください。バックグラウンド読み取りを許可した場合、約15分ごとに直近28日分を照合します。\n\n睡眠終了とGarminの同期後に反映されます。時計の睡眠モードや、現在眠っているかを示すデータではありません。段階のない区間は「不明」であり、睡眠セッション外の覚醒を推定しません。\n\n画面の期間は**ログの取り込み時刻**です。睡眠開始・終了は記録内の元の時刻を表示します。各セッションの最新の訂正・削除通知を選んで合計するため、再同期で時間を重複加算しません。バックフィルや再送は過去の睡眠として記録されます。"
+      }
+    }
+  ]
+}

@@ -83,6 +83,9 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.work.runtime)
     implementation(libs.garmin.connectiq)
+    implementation(libs.androidx.health.connect)
+    implementation(libs.androidx.activity.ktx)
+    implementation(libs.kotlinx.coroutines.android)
 
     testImplementation(libs.junit)
     // android.jar only ships stubs of org.json; use the real implementation in JVM tests.

@@ -9,6 +9,43 @@ Android 端末の利用状況（ロック解除から画面オフまでの活動
 Play ストアには出さず、サイドロードで使う。
 テレメトリーのモデル（スパンの階層、属性名、メトリクス名、ログのイベント名）は [`docs/design.md`](../docs/design.md) に従う。
 
+
+## Health Connectの睡眠段階
+
+Android v0.6.10から、Garmin ConnectがHealth Connectへ書いた睡眠セッションを読み取れます。
+時計アプリの更新は不要です。
+
+1. Androidの設定で「ヘルスコネクト」を開き、Garmin Connectによる睡眠データの書き込みを許可して、時計を同期します。
+2. Activitylogの「Sleep records」から「Enable sleep import / review access」を選び、睡眠の読み取りを許可します。
+3. 自動取得する場合はバックグラウンドの読み取りも許可します。対応していない端末や許可しない場合は、画面を開いて「Import now」を選びます。
+4. 受信済みの睡眠開始・終了、段階ごとの時間と区間、送信状態を同じ画面で確認できます。
+
+自動取得はWorkManagerの約15分周期で、実行時刻はAndroidが調整します。
+初回と各同期で直近28日分を照合し、変更のない記録は再送しません。
+睡眠終了とGarminの同期後に反映されるため、リアルタイムの睡眠検出ではありません。
+浅い睡眠、深い睡眠、REM、覚醒、未分類の睡眠、離床、ベッド内の覚醒、不明を区別します。
+段階が欠けた区間は不明として残し、セッション外の状態は推定しません。
+
+睡眠は`event.name=sleep.session`のOTLPログとして、Activitylogに設定済みの送信先へ送ります。
+ログ時刻は取り込み時刻であり、元の睡眠時刻と全段階の区間をJSON本文へ保持する構成です。
+過去の記録が訂正された場合は同じセッションIDで新しい内容を送ります。
+完全な読み取りで対象期間内の記録が消えた場合も、削除通知を送る仕組みです。
+これはクラウドの既存ログを物理削除する操作ではなく、ダッシュボード上の最新状態から除外するための通知です。
+クラウドに送信済みの履歴は送信先の保持設定に従います。
+
+データは端末内のアプリ専用領域へ保存します。
+元のHealth Connect記録IDはハッシュ化し、睡眠のタイトルと自由記述のメモは収集しません。
+「Stop sleep import」で今後の読み取りを停止できます。Health Connectへの書き込みや削除は行いません。
+オフライン時は本体共通の32 MiBの送信待ち領域へ退避します。
+睡眠の可視化には[`dashboards/sleep.json`](../dashboards/sleep.json)を使います。
+
+Health Connectの[睡眠仕様](https://developer.android.com/health-and-fitness/health-connect/features/sleep-sessions)と、Garminの[データ共有仕様](https://support.garmin.com/en-GB/?faq=JToBEy0jfe6pIygark2Ui5)に対応しています。
+JVMテストは本体と通信試作の各76件、両APKのビルドとLintを通過済みです。
+2026-11-01にPixel 10 ProのAndroid v0.6.10で、Garmin Connect由来の睡眠記録をHealth Connectから読み取り、Grafana Cloudへ送信できることを確認しました。
+浅い睡眠、深い睡眠、REM、覚醒の区間時刻と、セッションの集計表示も確認済みです。
+訂正・削除時の処理はJVMテストで検証しており、実機の記録を意図的に変更・削除する操作は行っていません。
+
+
 ## 仕組み
 
 - WorkManager の定期ジョブが 15 分ごとに動き、前回のチェックポイントから現在までの `UsageStatsManager` のイベントを読む。
